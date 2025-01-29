@@ -11,7 +11,7 @@ This project simulates the 5-star character pull system commonly found in gacha 
 
 ## Features
 
-- Large-scale pull simulation (default 2M pulls)
+- Large-scale pull simulation (default 10M pulls)
 - Statistical analysis including mean, median, and standard deviation
 - Visualization of pull distribution
 - Cumulative probability analysis
