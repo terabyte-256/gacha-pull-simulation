@@ -109,24 +109,14 @@ kable(stats_df, digits = 2)
 sim_results$plot
 ```
 
-### Execution Details
+## Pull Frequency Distribution
 
-```{r time_info}
-cat(sprintf("Simulation completed in %.2f seconds", 
-            as.numeric(sim_results$time)))
-```
+```{r cumulative_prob}
 
-### Pull Frequency Distribution
-
-```{r frequency_table}
 pull_freq <- as.data.frame(table(sim_results$results))
 names(pull_freq) <- c("Number of Pulls", "Frequency")
 pull_freq$"Percentage (%)" <- round(pull_freq$Frequency / sum(pull_freq$Frequency) * 100, 4)
-kable(pull_freq, row.names = FALSE)
-```
-## Cumulative Probability Analysis
 
-```{r cumulative_prob}
 # Calculate cumulative probabilities
 cum_prob <- pull_freq %>%
   arrange(`Number of Pulls`) %>%
@@ -146,6 +136,28 @@ cum_plot <- ggplot(cum_prob, aes(x = as.numeric(as.character(`Number of Pulls`))
   theme_minimal()
 
 # Display table and plot
-kable(cum_prob, row.names = FALSE)
 cum_plot
+kable(cum_prob, row.names = FALSE)
 ```
+### X number of Characters by the Nth Pull
+```{r nth_cumulative_prob}
+# freq of n / (cum freq of n * n)
+  
+  for (i in 1:90) {
+    pull_freq
+  }
+
+
+  arrange(`Number of Pulls`) %>% mutate(
+  
+  )
+
+
+```
+### Execution Details
+
+```{r time_info}
+cat(sprintf("Simulation completed in %.2f seconds", 
+            as.numeric(sim_results$time)))
+```
+
