@@ -1,0 +1,151 @@
+---
+title: "Gacha Pull Simulation Results"
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    theme: cosmo
+    toc: true
+encoding: "UTF-8"
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(knitr)
+library(dplyr)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r functions}
+algo <- function() {
+    for (i in 1:74) {
+        if (runif(1) < 0.006) {
+            return(i)
+        }
+    }
+    for (i in 74:90) { # soft pity
+        if (runif(1) <  (0.006 + (0.062 * (i - 73)))) {
+            return(i)
+        }
+    }
+
+    return(91) # hard pity
+}
+
+pullsystem <- function(iteration) {
+    BATCH_SIZE <- 1000
+    results <- numeric()
+    
+    batch_starts <- seq(1, iteration, by = BATCH_SIZE)
+    
+    for(i in batch_starts) {
+        batch_size <- min(BATCH_SIZE, iteration - i + 1)
+        batch_results <- sapply(1:batch_size, function(x) algo())
+        results <- c(results, batch_results)
+    }
+    
+    return(results)
+}
+
+get_user_input <- function() {
+    num_sims <- 2000000  # Default value instead of readline
+    return(num_sims)
+}
+
+main <- function() {
+    start_time <- Sys.time()
+    num_sims <- get_user_input()
+    results <- pullsystem(num_sims)
+    end_time <- Sys.time()
+    elapsed_time <- difftime(end_time, start_time, units="secs")
+    
+    results_df <- data.frame(pulls = results)
+    
+    stats <- list(
+        total_sims = num_sims,
+        average = mean(results),
+        median = median(results),
+        sd = sd(results),
+        min = min(results),
+        max = max(results)
+    )
+    
+    hist_plot <- ggplot(results_df, aes(x=pulls)) +
+        geom_histogram(binwidth=1, fill="skyblue", color="black") +
+        theme_minimal() +
+        labs(title="Distribution of Pulls Until Success",
+             x="Number of Pulls",
+             y="Frequency")
+    
+    return(list(
+        results = results,
+        stats = stats,
+        plot = hist_plot,
+        time = elapsed_time
+    ))
+}
+```
+
+## Simulation Results
+
+```{r run_simulation}
+sim_results <- main()
+```
+
+### Summary Statistics
+
+```{r stats_table}
+stats_df <- with(sim_results$stats, data.frame(
+    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
+               "Standard Deviation", "Minimum Pulls", "Maximum Pulls"),
+    Value = c(total_sims, average, median, sd, min, max)
+))
+kable(stats_df, digits = 2)
+```
+
+## Distribution Plot
+
+```{r plot_results}
+sim_results$plot
+```
+
+### Execution Details
+
+```{r time_info}
+cat(sprintf("Simulation completed in %.2f seconds", 
+            as.numeric(sim_results$time)))
+```
+
+### Pull Frequency Distribution
+
+```{r frequency_table}
+pull_freq <- as.data.frame(table(sim_results$results))
+names(pull_freq) <- c("Number of Pulls", "Frequency")
+pull_freq$"Percentage (%)" <- round(pull_freq$Frequency / sum(pull_freq$Frequency) * 100, 4)
+kable(pull_freq, row.names = FALSE)
+```
+## Cumulative Probability Analysis
+
+```{r cumulative_prob}
+# Calculate cumulative probabilities
+cum_prob <- pull_freq %>%
+  arrange(`Number of Pulls`) %>%
+  mutate(
+    `Cumulative Frequency` = cumsum(Frequency),
+    `Cumulative Probability` = round(`Cumulative Frequency` / sum(Frequency) * 100, 4)
+  )
+
+# Create cumulative probability plot
+cum_plot <- ggplot(cum_prob, aes(x = as.numeric(as.character(`Number of Pulls`)), 
+                                y = `Cumulative Probability`)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red", size = 2) +
+  labs(title = "Cumulative Probability of Getting 5-star Character",
+       x = "Number of Pulls",
+       y = "Cumulative Probability (%)") +
+  theme_minimal()
+
+# Display table and plot
+kable(cum_prob, row.names = FALSE)
+cum_plot
+```
