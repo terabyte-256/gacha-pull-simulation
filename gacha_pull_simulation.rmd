@@ -141,18 +141,12 @@ kable(cum_prob, row.names = FALSE)
 ```
 ### X number of Characters by the Nth Pull
 ```{r nth_cumulative_prob}
-# freq of n / (cum freq of n * n)
-  
-  for (i in 1:90) {
-    pull_freq
-  }
-
-
-  arrange(`Number of Pulls`) %>% mutate(
-  
+# cum freq of n / (freq of n * n)
+  # Apply the formula
+cum_prob <- cum_prob %>%
+  mutate(
+    `Calculated Value` = Frequency / (`Cumulative Frequency` * as.numeric(as.character(`Number of Pulls`)))
   )
-
-
 ```
 ### Execution Details
 
