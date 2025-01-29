@@ -18,18 +18,18 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r functions}
 algo <- function() {
-    for (i in 1:74) {
+    for (i in 1:73) {
         if (runif(1) < 0.006) {
             return(i)
         }
     }
-    for (i in 74:90) { # soft pity
+    for (i in 74:89) { # soft pity
         if (runif(1) <  (0.006 + (0.062 * (i - 73)))) {
             return(i)
         }
     }
 
-    return(91) # hard pity
+    return(90) # hard pity
 }
 
 pullsystem <- function(iteration) {
@@ -48,7 +48,7 @@ pullsystem <- function(iteration) {
 }
 
 get_user_input <- function() {
-    num_sims <- 2000000  # Default value instead of readline
+    num_sims <- 10000000  # Default value instead of readline
     return(num_sims)
 }
 
