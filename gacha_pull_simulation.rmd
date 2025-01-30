@@ -139,15 +139,7 @@ cum_plot <- ggplot(cum_prob, aes(x = as.numeric(as.character(`Number of Pulls`))
 cum_plot
 kable(cum_prob, row.names = FALSE)
 ```
-### X number of Characters by the Nth Pull
-```{r nth_cumulative_prob}
-# cum freq of n / (freq of n * n)
-  # Apply the formula
-cum_prob <- cum_prob %>%
-  mutate(
-    `Calculated Value` = Frequency / (`Cumulative Frequency` * as.numeric(as.character(`Number of Pulls`)))
-  )
-```
+
 ### Execution Details
 
 ```{r time_info}
