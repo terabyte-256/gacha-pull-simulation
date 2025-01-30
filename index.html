@@ -1107,6 +1107,8 @@ Details</a></li>
 <script>
 let calculator;
 
+import { GachaCalculator } from './src/gacha-calculator.js';
+
 async function initCalculator() {
   calculator = new GachaCalculator();
   await calculator.loadData();
