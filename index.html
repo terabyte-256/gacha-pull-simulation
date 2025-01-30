@@ -1104,24 +1104,40 @@ Details</a></li>
   Probability: <span id="probability">0.000000</span>
 </div>
 
-<script>
-let calculator;
-
+<script type="module">
+// Import calculator
 import { GachaCalculator } from './src/gacha-calculator.js';
 
-async function initCalculator() {
-  calculator = new GachaCalculator();
-  await calculator.loadData();
-}
+// Initialize calculator
+const calculator = new GachaCalculator();
+let dataLoaded = false;
 
-function calculate() {
-  const x = parseInt(document.getElementById('x-num').value);
-  const n = parseInt(document.getElementById('n-num').value);
-  const result = calculator.calculate(x, n);
-  document.getElementById('probability').textContent = result;
-}
+// Load data when page loads
+window.addEventListener('DOMContentLoaded', async () => {
+    const loadingDiv = document.getElementById('loading');
+    try {
+        dataLoaded = await calculator.loadData();
+        loadingDiv.style.display = 'none';
+    } catch (error) {
+        loadingDiv.innerHTML = 'Error loading data';
+    }
+});
 
-initCalculator();
+// Make calculate function global
+window.calculate = function() {
+    if (!dataLoaded) {
+        document.getElementById('result').innerHTML = 
+            '<strong>Please wait for data to load</strong>';
+        return;
+    }
+    
+    const x = parseInt(document.getElementById('xInput').value);
+    const n = parseInt(document.getElementById('nInput').value);
+    const result = calculator.calculate(x, n);
+    
+    document.getElementById('result').innerHTML = 
+        `<strong>Probability: ${result}%</strong>`;
+}
 </script>
 
 <script>
