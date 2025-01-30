@@ -5,7 +5,7 @@ export class GachaCalculator {
 
     async loadData() {
         try {
-            const response = await fetch('pull_data.csv');
+            const response = await fetch('./data/pull_data.csv');
             const csvText = await response.text();
             const lines = csvText.split('\n')
                 .filter(line => line.trim() !== '')
