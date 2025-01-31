@@ -44,42 +44,22 @@ export class GachaCalculator {
             return "X cannot be greater than N";
         }
 
-        // Calculate cumulative probability using dynamic rates
-        let totalProb = 0;
-        let successRate = 0;
-        
-        // Use binomial probability with pity system
-        for (let i = x; i <= n; i++) {
+        let total5stars = 10000000;
+        let totalPulls = 0;
+
+        for (let i = 0; i <= 89; i++) {
             let currentPullData = this.pullData[i];
-            if (!currentPullData) continue;
-
-            // Get success rate for current pull count
-            successRate = currentPullData.frequency / (currentPullData.cumProbability * currentPullData.pulls);
+              
+            if (!currentPullData) continue;  
             
-            // Calculate probability for exactly x successes in i pulls
-            let prob = this.binomialProbability(i, x, successRate);
-            totalProb += prob;
-        }
+            totalPulls += (currentPullData.frequency * (i + 1.0));
 
+            }
+
+        let successRate = totalPulls / total5stars;
+        
+        let totalProb = x / (n * successRate);
+        
         return totalProb.toFixed(6);
-    }
-
-    binomialProbability(n, k, p) {
-        return (
-            this.combinations(n, k) * 
-            Math.pow(p, k) * 
-            Math.pow(1 - p, n - k)
-        );
-    }
-
-    combinations(n, k) {
-        let coeff = 1;
-        for (let i = n - k + 1; i <= n; i++) {
-            coeff *= i;
-        }
-        for (let i = 1; i <= k; i++) {
-            coeff /= i;
-        }
-        return coeff;
     }
 }
