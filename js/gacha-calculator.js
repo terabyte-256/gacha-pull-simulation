@@ -34,8 +34,8 @@ export class GachaCalculator {
             return "Data not loaded";
         }
 
-        if (isNaN(x) || isNaN(n) || x < 1 || n < 1 || x > 90 || n > 90) {
-            return "Please enter valid numbers (1-90)";
+        if (isNaN(x) || isNaN(n) || x < 1 || n < 1) {
+            return "Please enter valid numbers";
         }
 
         n = n - 1;
@@ -58,7 +58,7 @@ export class GachaCalculator {
 
         let successRate = totalPulls / total5stars;
         
-        let totalProb = x / (n * successRate);
+        let totalProb = (n * successRate) / x;
         
         return totalProb.toFixed(6);
     }
