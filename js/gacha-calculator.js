@@ -40,7 +40,7 @@ export class GachaCalculator {
 
         n = n - 1;
 
-        if(x > n) {
+        if(x > n+1) {
             return "X cannot be greater than N";
         }
 
@@ -53,13 +53,13 @@ export class GachaCalculator {
             if (!currentPullData) continue;  
             
             totalPulls += (currentPullData.frequency * (i + 1.0));
-
+            console.log(currentPullData.frequency)
             }
 
         let successRate = totalPulls / total5stars;
-        
+        console.log(successRate);
         let totalProb = (n * successRate) / x;
-        
+        console.log(totalProb);
         return totalProb.toFixed(6);
     }
 }
