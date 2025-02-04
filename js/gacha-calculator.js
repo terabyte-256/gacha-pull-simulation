@@ -1,54 +1,56 @@
 export class GachaCalculator {
-    constructor() {
-        this.pullData = [];
-    }
-
-    async loadData() {
-        try {
-            const response = await fetch('./data/pull_data.csv');
-            const csvText = await response.text();
-            const lines = csvText.split('\n')
-                .filter(line => line.trim() !== '')
-                .slice(1);
-
-            this.pullData = lines.map(line => {
-                const [pulls, freq, percent, cumFreq, cumProb] = line.split(',');
-                return {
-                    pulls: parseInt(pulls),
-                    frequency: parseInt(freq),
-                    percentage: parseFloat(percent),
-                    cumFrequency: parseInt(cumFreq),
-                    cumProbability: parseFloat(cumProb)
-                };
-            });
-
-            return true;
-        } catch (error) {
-            console.error('Error loading data:', error);
-            return false;
+    calculateProbability(n, x) {
+        // Helper function to calculate the probability for a given pull
+        function getProbability(pull) {
+            if (pull <= 73) {
+                return 0.006;
+            } else if (pull >= 74 && pull <= 89) {
+                return 0.006 + 0.062 * (pull - 73);
+            } else if (pull === 90) {
+                return 1;
+            }
         }
-    }
-    calculate(x, n) {
-        if (!this.pullData.length) {
-            return "Data not loaded";
+    
+        // Helper function to calculate the binomial probability
+        function binomialProbability(k, n, p) {
+            const factorial = (num) => {
+                let result = 1;
+                for (let i = 2; i <= num; i++) {
+                    result *= i;
+                }
+                return result;
+            };
+    
+            const nFact = factorial(n);
+            const kFact = factorial(k);
+            const nkFact = factorial(n - k);
+    
+            return (nFact) / (kFact * nkFact) * Math.pow(p, k) * Math.pow(1 - p, n - k);
         }
-
-        if (isNaN(x) || isNaN(n) || x < 1 || n < 1) {
-            return "Please enter valid numbers";
+    
+        // Initialize the probability to 0
+        let totalProbability = 0;
+    
+        // Iterate through all possible sequences of pulls
+        for (let i = 0; i <= n; i++) {
+            for (let j = 0; j <= n - i; j++) {
+                // Calculate the probability for each sequence
+                let pullProbability = getProbability(i);
+                let remainingPulls = n - i;
+                let remainingProbability = 0.006; // Reset probability for remaining pulls
+    
+                for (let k = 0; k < remainingPulls; k++) {
+                    remainingProbability *= getProbability(k + i + 1);
+                }
+    
+                // Calculate the binomial probability for the remaining pulls
+                let binomialProb = binomialProbability(x, remainingPulls, remainingProbability);
+    
+                // Add the probability to the total probability
+                totalProbability += pullProbability * binomialProb;
+            }
         }
-
-        if (x > n) {
-            return "X cannot be greater than N";
-        }
-
-        const cumulativeProbabilities = this.pullData.cumProbability;
-
-        let probability = 0;
-
-        for (let i = x; i <= n; i++) {
-            probability += cumulativeProbabilities[i - 1];
-        }
-
-        return probability.toFixed(6);
-    }
+    
+        return totalProbability;
+    }    
 }

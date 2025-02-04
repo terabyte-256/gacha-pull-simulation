@@ -1112,28 +1112,12 @@ import { GachaCalculator } from './js/gacha-calculator.js';
 const calculator = new GachaCalculator();
 let dataLoaded = false;
 
-// Load data when page loads
-window.addEventListener('DOMContentLoaded', async () => {
-    const loadingDiv = document.getElementById('loading');
-    try {
-        dataLoaded = await calculator.loadData();
-        loadingDiv.style.display = 'none';
-    } catch (error) {
-        loadingDiv.innerHTML = 'Error loading data';
-    }
-});
-
 // Make calculate function global
 window.calculate = function() {
-    if (!dataLoaded) {
-        document.getElementById('result').innerHTML = 
-            '<strong>Please wait for data to load</strong>';
-        return;
-    }
-    
+
     const x = parseInt(document.getElementById('x-num').value);
     const n = parseInt(document.getElementById('n-num').value);
-    const result = calculator.calculate(x, n);
+    const result = calculator.calculateProbability(n, x);
     
     document.getElementById('result').innerHTML = 
         `<strong>Probability: ${result}%</strong>`;
