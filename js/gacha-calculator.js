@@ -41,7 +41,7 @@ export class GachaCalculator {
             return "X cannot be greater than N";
         }
 
-        const cumulativeProbabilities = this.pullData.map(row => row.cumulative_probability);
+        const cumulativeProbabilities = this.pullData.cumulative_probability;
 
         let probability = 0;
 
