@@ -28,7 +28,6 @@ export class GachaCalculator {
             return false;
         }
     }
-
     calculate(x, n) {
         if (!this.pullData.length) {
             return "Data not loaded";
@@ -38,28 +37,18 @@ export class GachaCalculator {
             return "Please enter valid numbers";
         }
 
-        n = n - 1;
-
-        if(x > n+1) {
+        if (x > n) {
             return "X cannot be greater than N";
         }
 
-        let total5stars = 10000000;
-        let totalPulls = 0;
+        const cumulativeProbabilities = this.pullData.map(row => row.cumulative_probability);
 
-        for (let i = 0; i <= 89; i++) {
-            let currentPullData = this.pullData[i];
-              
-            if (!currentPullData) continue;  
-            
-            totalPulls += (currentPullData.frequency * (i + 1.0));
-            console.log(currentPullData.frequency)
-            }
+        let probability = 0;
 
-        let successRate = totalPulls / total5stars;
-        console.log(successRate);
-        let totalProb = (n * successRate) / x;
-        console.log(totalProb);
-        return totalProb.toFixed(6);
+        for (let i = x; i <= n; i++) {
+            probability += cumulativeProbabilities[i - 1];
+        }
+
+        return probability.toFixed(6);
     }
 }
