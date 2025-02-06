@@ -18,7 +18,7 @@ export class GachaCalculator {
     };
 
 
-    calculateProbability(pulls, existing_character_pity, existing_cone_pity, character_copies, cone_copies, character_guaranteed = false, cone_guaranteed = false, num_simulations) {
+    calculateProbability(pulls, existing_character_pity = 0, existing_cone_pity = 0, character_copies = 0, cone_copies = 0, character_guaranteed = false, cone_guaranteed = false, num_simulations) {
         
         let successful_sims = 0;
         
@@ -26,14 +26,18 @@ export class GachaCalculator {
                 let pulls_left = pulls;
 
                 let current_character_pity = 0;
-                let current_cone_pity = existing_cone_pity;
+                let current_cone_pity = 0;
+                
+                current_character_pity = existing_character_pity;
+                current_cone_pity = existing_cone_pity;
         
                 let current_character_guaranteed = character_guaranteed;
                 let current_cone_guaranteed = cone_guaranteed;
         
-                let character_success = 0
+                let character_success = 0;
+                let cone_successes = 0;
                 
-                while (pulls_left > 0 && character_success < character_copies) {
+                while (pulls_left > 0 && ((character_success < character_copies) || (character_success == character_copies && character_copies == 0))) {
                     // 5 star prob
                     let random_value = random.random();
                     let current_five_star_chance = this.constants.FIVE_STAR_CHARACTER_CHANCE;
