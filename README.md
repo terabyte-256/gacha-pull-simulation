@@ -1,33 +1,67 @@
-# Gacha Pull Simulator
+# Gacha Pull Simulation
 
-A statistical simulation of gacha game pull mechanics using R.
+## Overview
 
-## Description
-
-This project simulates the 5-star character pull system commonly found in gacha games, with specific focus on:
-- Base rate of 0.6%
-- Soft pity starting at pull 74
-- Hard pity at pull 90
+This project simulates gacha pulls, a common mechanic in many mobile games, to estimate probabilities and resource requirements. It uses Monte Carlo simulations to model the pulling process for both characters and light cones. This project includes both an R Markdown file (`gacha_pull_simulation.rmd`) for generating a detailed report and a website (`index.html`) for a quick interactive overview of simulation results.
 
 ## Features
 
-- Large-scale pull simulation (default 10M pulls)
-- Statistical analysis including mean, median, and standard deviation
-- Visualization of pull distribution
-- Cumulative probability analysis
-- Performance optimized batch processing
+- **Monte Carlo Simulation:** Simulates thousands of gacha pulls to estimate probabilities.
+- **Character and Light Cone Support:** Models pulling for both characters and light cones with separate pity systems.
+- **Customizable Parameters:** Allows adjusting simulation parameters such as base chances, soft pity increments, and limited banner probabilities.
+- **Statistical Analysis:** Provides summary statistics including average pulls, median pulls, standard deviation, and cumulative probabilities.
+- **Visualizations:** Generates histograms and cumulative probability plots to visualize the simulation results.
 
-## Requirements
+## Technologies Used
 
-- R
-- Required packages: ggplot2, knitr, dplyr
+- **R:** Used for the simulation logic, statistical analysis, and generating visualizations.
+- **ggplot2:** R library for creating plots and graphs.
+- **knitr:** R package for dynamic report generation.
+- **dplyr:** R package for data manipulation.
+- **JavaScript:** Used for any interactive front-end components (if applicable).
+
+## Setup
+
+### Prerequisites
+
+- R (>= 4.0)
+- RStudio (optional but recommended)
+- Required R packages: ggplot2, knitr, dplyr
+
+### Installation
+
+1.  Clone the repository:
+
+    ```bash
+    git clone [repository_url]
+    cd gacha-pull-simulation
+    ```
+
+2.  Install the required R packages:
+
+    ```R
+    install.packages(c("ggplot2", "knitr", "dplyr"))
+    ```
 
 ## Usage
 
-Run the R Markdown file to generate a comprehensive report with:
-- Pull distribution histogram
-- Summary statistics
-- Frequency tables
-- Cumulative probability analysis
+1.  Open `gacha_pull_simulation.rmd` in RStudio.
 
-The simulation parameters can be modified in the `get_user_input()` function.
+2.  Modify the simulation parameters in the `constants` chunk if needed.
+
+3.  Run all chunks in the Rmd file to execute the simulation and generate the report.
+
+4.  The report will display summary statistics, distribution plots, and cumulative probability plots.
+
+5.  For an interactive, browser-based view of simulation results, open `index.html` in any web browser.
+
+## Project Structure
+```
+gacha-pull-simulation/
+├── gacha_pull_simulation.rmd
+├── js/
+│   └── gacha-calculator.js
+├── index.html
+├── .gitignore
+└── README.md
+```
