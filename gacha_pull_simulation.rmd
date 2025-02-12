@@ -13,232 +13,291 @@ encoding: "UTF-8"
 library(ggplot2)
 library(knitr)
 library(dplyr)
+library(kableExtra)
+library(hexbin)
 knitr::opts_chunk$set(echo = FALSE)
 ```
-```{r constants}
-FIVE_STAR_CHARACTER_CHANCE <- 0.006
-FIVE_STAR_CONE_CHANCE <- 0.008
 
-CHARACTER_SOFT_PITY <- 74
-SOFT_PITY_INCREMENT <- 0.062
-CHARACTER_PITY <- 90
+```{r load_data}
+# Read the simulation results from the CSV file
+results_hsr <- read.csv("./data/hsr.csv")
+results_genshin <- read.csv("./data/genshin.csv")
+results_zzz <- read.csv("./data/zzz.csv")
 
-CONE_SOFT_PITY <- 64
-CONE_PITY <- 80
-
-LIMITED_CHARACTER_CHANCE <- 0.5
-LIMITED_CONE_CHANCE <- 0.75
-```
-```{r functions}
-algo <- function() {
-    
-    pulls_left <- 90
-    
-    current_character_pity <- 0
-    current_cone_pity <- 0
-
-    current_character_guaranteed <- FALSE
-    current_cone_guaranteed <- FALSE
-
-    character_success <- 0
-
-    character_copies <- 0
-    cone_copies <- 0
-
-    cone_successes <- 0
-
-    while (pulls_left > 0 && ((character_success < character_copies) || (character_success == character_copies && character_copies == 0))) {
-        random_value <- runif(1)
-       
-        current_five_star_chance <- FIVE_STAR_CHARACTER_CHANCE
-
-        if ((cone_copies > 0 && character_success < character_copies) || (character_success == character_copies && character_copies == 0)) {
-            
-            current_five_star_chance += SOFT_PITY_INCREMENT * max(current_character_pity - CHARACTER_SOFT_PITY, 0.0)
-        
-            if (random_value < current_five_star_chance || current_character_pity + 1 == CHARACTER_PITY) {
-                if (current_character_guaranteed || runif(1) < LIMITED_CHARACTER_CHANCE) {
-                    return(
-                        pull_number = pulls_left
-                        cones_pulled = cone_successes
-                    )
-                } else {
-                    current_character_pity = 0
-                    current_character_guaranteed = TRUE
-                }
-            } else {
-                current_character_pity += 1
-            }
-        } else {
-            # cone prob
-            current_five_star_chance = FIVE_STAR_CONE_CHANCE
-            current_five_star_chance = SOFT_PITY_INCREMENT * math(current_cone_pity - CONE_SOFT_PITY, 0.0)
-
-            if (random_value < current_five_star_chance || current_cone_pity + 1 == CONE_PITY) {
-                if (current_cone_guaranteed || runif(1) < LIMITED_CONE_CHANCE) {
-                    cone_successes += 1
-                    current_cone_guaranteed = FALSE
-                } else {
-                    current_cone_pity = 0
-                    current_cone_guaranteed = TRUE
-                }
-            } else {
-                current_cone_pity += 1
-            }
-        }
-
-        pulls_left -= 1
-    }
-
-    return(
-        pull_number = 90
-        cones_pulled = cone_successes
+# Calculate statistics for each game
+calculate_stats <- function(data) {
+    list(
+        total_sims = nrow(data),
+        pulls_mean = mean(data$Pulls),
+        pulls_median = median(data$Pulls),
+        pulls_sd = sd(data$Pulls),
+        pulls_min = min(data$Pulls),
+        pulls_max = max(data$Pulls),
+        limited_ratio = mean(data$Limited),
+        weapons_ratio = mean(data$Weapons),
+        chars_ratio = mean(data$Characters)
     )
-
 }
 
-pullsystem <- function(iteration) {
-    BATCH_SIZE <- 1000
-    results <- numeric()
-    
-    batch_starts <- seq(1, iteration, by = BATCH_SIZE)
-    
-    for(i in batch_starts) {
-        batch_size <- min(BATCH_SIZE, iteration - i + 1)
-        batch_results <- sapply(1:batch_size, function(x) algo())
-        results <- c(results, batch_results)
-    }
-    
-    return(results)
-}
-
-
-num_sims <- 10000000  # Default value 10M
-
-main <- function() {
-    start_time <- Sys.time()
-    results <- pullsystem(num_sims)
-    end_time <- Sys.time()
-    elapsed_time <- difftime(end_time, start_time, units="secs")
-    
-    results_df <- data.frame(pulls = results)
-    
-    stats <- list(
-        total_sims = num_sims,
-        average = mean(results),
-        median = median(results),
-        sd = sd(results),
-        min = min(results),
-        max = max(results)
-    )
-    
-    hist_plot <- ggplot(results_df, aes(x=pulls)) +
-        geom_histogram(binwidth=1, fill="skyblue", color="black") +
-        theme_minimal() +
-        labs(title="Distribution of Pulls Until Success",
-             x="Number of Pulls",
-             y="Frequency")
-    
-    return(list(
-        geom_histogram(binwidth=1, fill="skyblue", color="black") +
-        theme_minimal() +
-        labs(title="Distribution of Pulls Until Success",
-             x="Number of Pulls",
-             y="Frequency")
-    
-    cone_plot <- ggplot(results_df, aes(x=cones)) +
-        geom_histogram(binwidth=1, fill="lightgreen", color="black") +
-        theme_minimal() +
-        labs(title="Distribution of Light Cones Obtained",
-             x="Number of Light Cones",
-             y="Frequency")
-    
-    return(list(
-        results = results_df,
-        stats = stats,
-        pulls_plot = hist_plot,
-        cones_plot = cone_plot,
-        time = elapsed_time
-    ))
-}
+stats_hsr <- calculate_stats(results_hsr)
+stats_genshin <- calculate_stats(results_genshin)
+stats_zzz <- calculate_stats(results_zzz)
 ```
 
-## Simulation Results
+```{r prepare_data}
+# Combine data for comparison
+results_hsr$Game <- "HSR"
+results_genshin$Game <- "Genshin"
+results_zzz$Game <- "ZZZ"
+all_results <- rbind(results_hsr, results_genshin, results_zzz)
 
-```{r run_simulation}
-sim_results <- main()
+# Set up a consistent color scheme
+game_colors <- c("HSR" = "#5B9BD5", "Genshin" = "#70AD47", "ZZZ" = "#ED7D31")
+
+# Prepare combined data
+all_results$Game <- factor(all_results$Game, levels = c("HSR", "Genshin", "ZZZ"))
 ```
 
-### Summary Statistics
+```{r prepare_success_rates}
+# Calculate success rates
+success_rates <- data.frame(
+    Game = c("HSR", "Genshin", "ZZZ"),
+    Limited = c(stats_hsr$limited_ratio, stats_genshin$limited_ratio, stats_zzz$limited_ratio),
+    Weapons = c(stats_hsr$weapons_ratio, stats_genshin$weapons_ratio, stats_zzz$weapons_ratio),
+    Characters = c(stats_hsr$chars_ratio, stats_genshin$chars_ratio, stats_zzz$chars_ratio)
+)
 
-```{r stats_table}
-stats_df <- with(sim_results$stats, data.frame(
+# Reshape success rates for plotting
+success_rates_long <- success_rates %>%
+    tidyr::pivot_longer(cols=c(Limited, Weapons, Characters),
+                       names_to="Type",
+                       values_to="Rate")
+```
+
+## Pull Distribution Comparison
+
+```{r pull_distributions}
+# Side-by-side density plots
+ggplot(all_results, aes(x=Pulls, fill=Game)) +
+    geom_density(alpha=0.5) +
+    scale_fill_manual(values=game_colors) +
+    theme_minimal() +
+    labs(title="Pull Distribution Comparison Across Games",
+         x="Number of Pulls",
+         y="Density")
+
+# Box plots with violin plots
+ggplot(all_results, aes(x=Game, y=Pulls, fill=Game)) +
+    geom_violin(alpha=0.5) +
+    geom_boxplot(width=0.2, alpha=0.8) +
+    scale_fill_manual(values=game_colors) +
+    theme_minimal() +
+    labs(title="Pull Distribution by Game",
+         y="Number of Pulls")
+```
+
+## Success Rates Visualization
+
+```{r success_rates_viz}
+# Bar plot of success rates
+ggplot(success_rates_long, aes(x=Game, y=Rate, fill=Type)) +
+    geom_bar(stat="identity", position="dodge") +
+    scale_fill_brewer(palette="Set2") +
+    theme_minimal() +
+    labs(title="Success Rates by Game and Type",
+         y="Rate") +
+    coord_flip()
+```
+
+## Cumulative Probability Analysis
+
+```{r cumulative_analysis}
+# Function to calculate cumulative probabilities
+calc_cumulative <- function(data) {
+    data %>%
+        group_by(Pulls) %>%
+        summarise(count = n()) %>%
+        arrange(Pulls) %>%
+        mutate(
+            probability = count/sum(count),
+            cumulative = cumsum(count)/sum(count)
+        )
+}
+
+# Calculate cumulative probabilities for each game
+cum_hsr <- calc_cumulative(results_hsr)
+cum_genshin <- calc_cumulative(results_genshin)
+cum_zzz <- calc_cumulative(results_zzz)
+
+# Combine cumulative data
+cum_hsr$Game <- "HSR"
+cum_genshin$Game <- "Genshin"
+cum_zzz$Game <- "ZZZ"
+cum_all <- rbind(cum_hsr, cum_genshin, cum_zzz)
+
+# Plot cumulative probabilities
+ggplot(cum_all, aes(x=Pulls, y=cumulative, color=Game)) +
+    geom_line(linewidth=1) +  # Changed from size to linewidth
+    scale_color_manual(values=game_colors) +
+    theme_minimal() +
+    labs(title="Cumulative Probability of Success",
+         x="Number of Pulls",
+         y="Cumulative Probability") +
+    geom_hline(yintercept=0.5, linetype="dashed", color="gray") +
+    geom_hline(yintercept=0.95, linetype="dashed", color="gray")
+```
+
+## Character vs Weapon Analysis
+
+```{r char_weapon_analysis}
+# Create heatmap of Characters vs Weapons frequencies for each game
+all_results %>%
+  group_by(Game, Characters, Weapons) %>%
+  summarise(Count = n(), .groups = 'drop') %>%
+  ggplot(aes(x = Characters, y = Weapons, fill = Count)) +
+    geom_tile() +
+    facet_wrap(~Game) +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(title = "Character vs Weapon Distribution by Game",
+         x = "Number of Characters",
+         y = "Number of Weapons",
+         fill = "Frequency")
+```
+
+## Comparative Analysis
+
+```{r comparative_plots}
+# Combine data for comparison
+results_hsr$Game <- "HSR"
+results_genshin$Game <- "Genshin"
+results_zzz$Game <- "ZZZ"
+all_results <- rbind(results_hsr, results_genshin, results_zzz)
+
+# Create comparative boxplot
+ggplot(all_results, aes(x=Game, y=Pulls, fill=Game)) +
+    geom_boxplot() +
+    theme_minimal() +
+    labs(title="Pulls Distribution Comparison",
+         y="Number of Pulls",
+         x="Game") +
+    scale_fill_brewer(palette="Set2")
+```
+
+## Game-Specific Statistics
+
+### Honkai: Star Rail
+```{r hsr_stats}
+kable(data.frame(
     Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
-               "Standard Deviation", "Minimum Pulls", "Maximum Pulls",
-               "Average Cones", "Median Cones", "Standard Deviation Cones"),
-    Value = c(total_sims, pulls_average, pulls_median, pulls_sd, pulls_min, pulls_max,
-              cones_average, cones_median, cones_sd)
-))
-kable(stats_df, digits = 2)
+               "Standard Deviation", "Min Pulls", "Max Pulls",
+               "Limited Rate", "Weapon Rate", "Character Rate"),
+    Value = c(stats_hsr$total_sims, stats_hsr$pulls_mean, stats_hsr$pulls_median, 
+              stats_hsr$pulls_sd, stats_hsr$pulls_min, stats_hsr$pulls_max,
+              stats_hsr$limited_ratio, stats_hsr$weapons_ratio, stats_hsr$chars_ratio)
+), digits=2)
+
+ggplot(results_hsr, aes(x=Pulls)) +
+    geom_histogram(binwidth=1, fill="skyblue", color="black") +
+    theme_minimal() +
+    labs(title="HSR Pull Distribution",
+         x="Number of Pulls",
+         y="Frequency")
 ```
 
-## Distribution Plot
+### Genshin Impact
+```{r genshin_stats}
+kable(data.frame(
+    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
+               "Standard Deviation", "Min Pulls", "Max Pulls",
+               "Limited Rate", "Weapon Rate", "Character Rate"),
+    Value = c(stats_genshin$total_sims, stats_genshin$pulls_mean, stats_genshin$pulls_median, 
+              stats_genshin$pulls_sd, stats_genshin$pulls_min, stats_genshin$pulls_max,
+              stats_genshin$limited_ratio, stats_genshin$weapons_ratio, stats_genshin$chars_ratio)
+), digits=2)
 
-```{r plot_results}
-sim_results$pulls_plot
+ggplot(results_genshin, aes(x=Pulls)) +
+    geom_histogram(binwidth=1, fill="lightgreen", color="black") +
+    theme_minimal() +
+    labs(title="Genshin Pull Distribution",
+         x="Number of Pulls",
+         y="Frequency")
 ```
 
-## Light Cones Distribution Plot
+### ZZZ
+```{r zzz_stats}
+kable(data.frame(
+    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
+               "Standard Deviation", "Min Pulls", "Max Pulls",
+               "Limited Rate", "Weapon Rate", "Character Rate"),
+    Value = c(stats_zzz$total_sims, stats_zzz$pulls_mean, stats_zzz$pulls_median, 
+              stats_zzz$pulls_sd, stats_zzz$pulls_min, stats_zzz$pulls_max,
+              stats_zzz$limited_ratio, stats_zzz$weapons_ratio, stats_zzz$chars_ratio)
+), digits=2)
 
-```{r plot_cones}
-sim_results$cones_plot
+ggplot(results_zzz, aes(x=Pulls)) +
+    geom_histogram(binwidth=1, fill="lightcoral", color="black") +
+    theme_minimal() +
+    labs(title="ZZZ Pull Distribution",
+         x="Number of Pulls",
+         y="Frequency")
 ```
 
-## Pull Frequency Distribution
+## Success Rates Comparison
+```{r success_rates}
+success_rates <- data.frame(
+    Game = c("HSR", "Genshin", "ZZZ"),
+    Limited = c(stats_hsr$limited_ratio, stats_genshin$limited_ratio, stats_zzz$limited_ratio),
+    Weapons = c(stats_hsr$weapons_ratio, stats_genshin$weapons_ratio, stats_zzz$weapons_ratio),
+    Characters = c(stats_hsr$chars_ratio, stats_genshin$chars_ratio, stats_zzz$chars_ratio)
+)
 
-```{r cumulative_prob}
-
-pull_freq <- as.data.frame(table(sim_results$results$pulls))
-names(pull_freq) <- c("Number of Pulls", "Frequency")
-pull_freq$"Percentage (%)" <- round(pull_freq$Frequency / sum(pull_freq$Frequency) * 100, 4)
-
-# Calculate cumulative probabilities
-cum_prob <- pull_freq %>%
-  arrange(`Number of Pulls`) %>%
-  mutate(
-    `Cumulative Frequency` = cumsum(Frequency),
-    `Cumulative Probability` = round(`Cumulative Frequency` / sum(Frequency) * 100, 4)
-  )
-
-
-# Create cumulative probability plot
-cum_plot <- ggplot(cum_prob, aes(x = as.numeric(as.character(`Number of Pulls`)), 
-                                y = `Cumulative Probability`)) +
-  geom_line(color = "blue") +
-  geom_point(color = "red", size = 2) +
-  labs(title = "Cumulative Probability of Getting 5-star Character",
-       x = "Number of Pulls",
-       y = "Cumulative Probability (%)") +
-  theme_minimal()
-
-# Display table and plot
-cum_plot
-kable(cum_prob, row.names = FALSE)
+kable(success_rates, digits=3, 
+      caption="Average Success Rates per Game")
 ```
 
-### Execution Details
+## Detailed Pull Statistics
 
-```{r time_info}
-cat(sprintf("Simulation completed in %.2f seconds", 
-            as.numeric(sim_results$time)))
+```{r detailed_stats}
+# Function to calculate detailed statistics
+calc_detailed_stats <- function(data, game_name) {
+    data %>%
+        group_by(Pulls) %>%
+        summarise(
+            Count = n(),
+            Probability = Count/nrow(data),
+            Cumulative_Prob = cumsum(Count)/nrow(data),
+            Limited_Rate = mean(Limited),
+            Weapon_Rate = mean(Weapons),
+            Character_Rate = mean(Characters)
+        ) %>%
+        mutate(Game = game_name) %>%
+        select(Game, Pulls, Count, Probability, Cumulative_Prob, 
+               Limited_Rate, Weapon_Rate, Character_Rate)
+}
+
+# Calculate detailed stats for each game
+detailed_stats_hsr <- calc_detailed_stats(results_hsr, "HSR")
+detailed_stats_genshin <- calc_detailed_stats(results_genshin, "Genshin")
+detailed_stats_zzz <- calc_detailed_stats(results_zzz, "ZZZ")
+
+# Combine all stats
+all_detailed_stats <- rbind(
+    detailed_stats_hsr,
+    detailed_stats_genshin,
+    detailed_stats_zzz
+)
+
+# Display table with formatted numbers
+kable(all_detailed_stats, 
+      digits = 4,
+      caption = "Detailed Pull Statistics by Game",
+      format = "latex",
+      longtable = TRUE) %>%
+    kable_styling(
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        font_size = 8
+    ) %>%
+    column_spec(1, bold = TRUE)
 ```
-
-
-### Execution Details
-
-```{r time_info}
-cat(sprintf("Simulation completed in %.2f seconds", 
-            as.numeric(sim_results$time)))
-```
-````
 

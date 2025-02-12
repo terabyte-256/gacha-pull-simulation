@@ -54,3 +54,9 @@ logs/
 
 # Cache
 .cache/
+
+# Rust specific
+/target
+**/*.rs.bk
+Cargo.lock
+*.pdb
