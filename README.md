@@ -1,67 +1,92 @@
 # Gacha Pull Simulation
 
-## Overview
+This project simulates and analyzes gacha pull statistics for various HoYoverse games (Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero). It includes both a data generation component and analysis tools.
 
-This project simulates gacha pulls, a common mechanic in many mobile games, to estimate probabilities and resource requirements. It uses Monte Carlo simulations to model the pulling process for both characters and light cones. This project includes both an R Markdown file (`gacha_pull_simulation.rmd`) for generating a detailed report and a website (`index.html`) for a quick interactive overview of simulation results.
+## Project Structure
+
+```
+gacha-pull-simulation/
+├── src/
+│   └── main.rs         # Rust simulation script
+├── js/
+│   └── gacha-calculator.js  # JavaScript calculator
+├── gacha_pull_simulation.rmd  # R Markdown analysis
+├── index.html          # Web interface
+└── data/              # Generated CSV files
+    ├── hsr.csv
+    ├── genshin.csv
+    └── zzz.csv
+```
+
+## Prerequisites
+
+- Rust (latest stable version)
+- R with the following packages:
+  - ggplot2
+  - knitr
+  - dplyr
+  - kableExtra
+  - hexbin
+- A modern web browser
+
+## Running the Simulation
+
+1. Generate the simulation data:
+   ```bash
+   cargo run --release
+   ```
+   This will create CSV files in the `data` directory containing pull statistics for each game.
+
+2. Generate the analysis report:
+   ```r
+   rmarkdown::render("gacha_pull_simulation.rmd")
+   ```
+   This will create both PDF and HTML versions of the analysis report.
+
+3. For interactive calculations, open `index.html` in a web browser.
 
 ## Features
 
-- **Monte Carlo Simulation:** Simulates thousands of gacha pulls to estimate probabilities.
-- **Character and Light Cone Support:** Models pulling for both characters and light cones with separate pity systems.
-- **Customizable Parameters:** Allows adjusting simulation parameters such as base chances, soft pity increments, and limited banner probabilities.
-- **Statistical Analysis:** Provides summary statistics including average pulls, median pulls, standard deviation, and cumulative probabilities.
-- **Visualizations:** Generates histograms and cumulative probability plots to visualize the simulation results.
+- **Data Generation (Rust)**
+  - Multi-threaded simulation for better performance
+  - Configurable game parameters
+  - Outputs CSV files with detailed pull statistics
 
-## Technologies Used
+- **Analysis (R Markdown)**
+  - Pull distribution visualization
+  - Success rate comparisons
+  - Cumulative probability analysis
+  - Character vs weapon analysis
+  - Detailed statistical breakdowns
 
-- **R:** Used for the simulation logic, statistical analysis, and generating visualizations.
-- **ggplot2:** R library for creating plots and graphs.
-- **knitr:** R package for dynamic report generation.
-- **dplyr:** R package for data manipulation.
-- **JavaScript:** Used for any interactive front-end components (if applicable).
+- **Web Calculator (JavaScript)**
+  - Interactive probability calculator
+  - Supports all three games
+  - Configurable parameters including pity and guaranteed status
 
-## Setup
+## Game Parameters
 
-### Prerequisites
+The simulation includes different parameters for each game:
 
-- R (>= 4.0)
-- RStudio (optional but recommended)
-- Required R packages: ggplot2, knitr, dplyr
+- **Honkai: Star Rail**
+  - 5★ Weapon chance: 0.8%
+  - Limited character chance: 50%
+  - Limited weapon chance: 75%
 
-### Installation
+- **Genshin Impact**
+  - 5★ Weapon chance: 0.7%
+  - Limited character chance: 55%
+  - Limited weapon chance: 75%
 
-1.  Clone the repository:
+- **Zenless Zone Zero**
+  - 5★ Weapon chance: 1.0%
+  - Limited character chance: 50%
+  - Limited weapon chance: 75%
 
-    ```bash
-    git clone [repository_url]
-    cd gacha-pull-simulation
-    ```
+## Contributing
 
-2.  Install the required R packages:
+Feel free to submit issues or pull requests if you find bugs or have suggestions for improvements.
 
-    ```R
-    install.packages(c("ggplot2", "knitr", "dplyr"))
-    ```
+## License
 
-## Usage
-
-1.  Open `gacha_pull_simulation.rmd` in RStudio.
-
-2.  Modify the simulation parameters in the `constants` chunk if needed.
-
-3.  Run all chunks in the Rmd file to execute the simulation and generate the report.
-
-4.  The report will display summary statistics, distribution plots, and cumulative probability plots.
-
-5.  For an interactive, browser-based view of simulation results, open `index.html` in any web browser.
-
-## Project Structure
-```
-gacha-pull-simulation/
-├── gacha_pull_simulation.rmd
-├── js/
-│   └── gacha-calculator.js
-├── index.html
-├── .gitignore
-└── README.md
-```
+MIT License - Feel free to use this code for your own projects.
