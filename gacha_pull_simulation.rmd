@@ -258,46 +258,72 @@ kable(success_rates, digits=3,
 
 ## Detailed Pull Statistics
 
-```{r detailed_stats}
-# Function to calculate detailed statistics
-calc_detailed_stats <- function(data, game_name) {
-    data %>%
-        group_by(Pulls) %>%
-        summarise(
-            Count = n(),
-            Probability = Count/nrow(data),
-            Cumulative_Prob = cumsum(Count)/nrow(data),
-            Limited_Rate = mean(Limited),
-            Weapon_Rate = mean(Weapons),
-            Character_Rate = mean(Characters)
-        ) %>%
-        mutate(Game = game_name) %>%
-        select(Game, Pulls, Count, Probability, Cumulative_Prob, 
-               Limited_Rate, Weapon_Rate, Character_Rate)
-}
+### Honkai: Star Rail Detailed Statistics
+```{r hsr_detailed_stats}
+detailed_stats_hsr <- results_hsr %>%
+    group_by(Pulls) %>%
+    summarise(
+        Count = n(),
+        Probability = Count/nrow(results_hsr),
+        Cumulative_Prob = cumsum(Count)/nrow(results_hsr),
+        Limited_Rate = mean(Limited),
+        Weapon_Rate = mean(Weapons),
+        Character_Rate = mean(Characters)
+    )
 
-# Calculate detailed stats for each game
-detailed_stats_hsr <- calc_detailed_stats(results_hsr, "HSR")
-detailed_stats_genshin <- calc_detailed_stats(results_genshin, "Genshin")
-detailed_stats_zzz <- calc_detailed_stats(results_zzz, "ZZZ")
-
-# Combine all stats
-all_detailed_stats <- rbind(
-    detailed_stats_hsr,
-    detailed_stats_genshin,
-    detailed_stats_zzz
-)
-
-# Display table with formatted numbers
-kable(all_detailed_stats, 
+kable(detailed_stats_hsr, 
       digits = 4,
-      caption = "Detailed Pull Statistics by Game",
-      format = "latex",
-      longtable = TRUE) %>%
+      caption = "HSR Pull Statistics",
+      format = "latex") %>%
     kable_styling(
-        latex_options = c("striped", "scale_down", "repeat_header"),
+        latex_options = c("striped", "scale_down"),
         font_size = 8
-    ) %>%
-    column_spec(1, bold = TRUE)
+    )
+```
+
+### Genshin Impact Detailed Statistics
+```{r genshin_detailed_stats}
+detailed_stats_genshin <- results_genshin %>%
+    group_by(Pulls) %>%
+    summarise(
+        Count = n(),
+        Probability = Count/nrow(results_genshin),
+        Cumulative_Prob = cumsum(Count)/nrow(results_genshin),
+        Limited_Rate = mean(Limited),
+        Weapon_Rate = mean(Weapons),
+        Character_Rate = mean(Characters)
+    )
+
+kable(detailed_stats_genshin, 
+      digits = 4,
+      caption = "Genshin Impact Pull Statistics",
+      format = "latex") %>%
+    kable_styling(
+        latex_options = c("striped", "scale_down"),
+        font_size = 8
+    )
+```
+
+### ZZZ Detailed Statistics
+```{r zzz_detailed_stats}
+detailed_stats_zzz <- results_zzz %>%
+    group_by(Pulls) %>%
+    summarise(
+        Count = n(),
+        Probability = Count/nrow(results_zzz),
+        Cumulative_Prob = cumsum(Count)/nrow(results_zzz),
+        Limited_Rate = mean(Limited),
+        Weapon_Rate = mean(Weapons),
+        Character_Rate = mean(Characters)
+    )
+
+kable(detailed_stats_zzz, 
+      digits = 4,
+      caption = "ZZZ Pull Statistics",
+      format = "latex") %>%
+    kable_styling(
+        latex_options = c("striped", "scale_down"),
+        font_size = 8
+    )
 ```
 

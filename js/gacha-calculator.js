@@ -1,93 +1,110 @@
-export class GachaCalculator {
-    // uses monte carlo
-    
-    static constants = {
-        FIVE_STAR_CHARACTER_CHANCE: 0.006,
-        FIVE_STAR_CONE_CHANCE: 0.008,
-        
-        CHARACTER_SOFT_PITY: 74,
-        SOFT_PITY_INCREMENT: 0.062,
-        CHARACTER_PITY: 90,
-        
-        CONE_SOFT_PITY: 64,
-        CONE_PITY: 80,
-        
+// Common values across all games
+const COMMON_FIVE_STAR_CHARACTER_CHANCE = 0.006;
+const COMMON_SOFT_PITY_INCREMENT = 0.062;
+const COMMON_CHARACTER_SOFT_PITY = 74;
+const COMMON_CHARACTER_PITY = 90;
+const COMMON_WEAPON_SOFT_PITY = 64;
+const COMMON_WEAPON_PITY = 80;
+
+// Game-specific values
+const gameData = {
+    hsr: {
+        FIVE_STAR_WEAPON_CHANCE: 0.008,
         LIMITED_CHARACTER_CHANCE: 0.5,
-        LIMITED_CONE_CHANCE: 0.75,
+        LIMITED_WEAPON_CHANCE: 0.75 // leaving these in here in case they need to be changed
+    },
+    genshin: {
+        FIVE_STAR_WEAPON_CHANCE: 0.007,
+        LIMITED_CHARACTER_CHANCE: 0.55, // This is different because of the change to Hoyo's pity system
+        LIMITED_WEAPON_CHANCE: 0.75 // leaving these in here in case they need to be changed
+    },
+    zzz: {
+        FIVE_STAR_WEAPON_CHANCE: 0.01,
+        LIMITED_CHARACTER_CHANCE: 0.5,
+        LIMITED_WEAPON_CHANCE: 0.75 // leaving these in here in case they need to be changed
+    },
+};
 
-    };
+// Export the helper function
+export function getGameData(hoyoverseGame) {
+    return gameData[hoyoverseGame.toLowerCase()] || {};
+}
 
+// Export the main calculation function
+export function calculatePullProbability(
+    pulls,
+    characterPity,
+    weaponPity,
+    weaponGuaranteed,
+    characterGuaranteed,
+    characterCopies,
+    weaponCopies,
+    numSimulations,
+    hoyoverseGame
+) {
+    let successfulSimulations = 0;
+    const gameInfo = getGameData(hoyoverseGame);
 
-    calculateProbability(pulls, existing_character_pity = 0, existing_cone_pity = 0, character_copies = 0, cone_copies = 0, character_guaranteed = false, cone_guaranteed = false, num_simulations) {
-        
-        let successful_sims = 0;
-        
-        for (let i = 0; i < num_simulations; i++) {
-                let pulls_left = pulls;
+    for (let i = 0; i < numSimulations; i++) {
+        let pullsLeft = pulls;
+        let charSuccesses = 0;
+        let weaponSuccesses = 0;
+        let currWeaponPity = weaponPity;
+        let currCharPity = characterPity;
+        let currWeaponGuaranteed = weaponGuaranteed;
+        let currCharacterGuaranteed = characterGuaranteed;
 
-                let current_character_pity = 0;
-                let current_cone_pity = 0;
-                
-                current_character_pity = existing_character_pity;
-                current_cone_pity = existing_cone_pity;
-        
-                let current_character_guaranteed = character_guaranteed;
-                let current_cone_guaranteed = cone_guaranteed;
-        
-                let character_success = 0;
-                let cone_successes = 0;
-                
-                while (pulls_left > 0 && ((character_success < character_copies) || (character_success == character_copies && character_copies == 0))) {
-                    // 5 star prob
-                    let random_value = random.random();
-                    let current_five_star_chance = this.constants.FIVE_STAR_CHARACTER_CHANCE;
-        
-                    if (cone_copies > 0 && character_success < character_copies) {
-                    // increments if current pity number is 74
-                    current_five_star_chance += this.constants.SOFT_PITY_INCREMENT * Math.max(current_character_pity - this.constants.CHARACTER_SOFT_PITY, 0.0);
-        
-                        if (random_value < current_five_star_chance || current_character_pity + 1 == this.constants.CHARACTER_PITY) {
-                        
-                            if (current_character_guaranteed || random.random() < this.constants.LIMITED_CHARACTER_CHANCE) {
-                                character_success += 1;
-                                current_character_guaranteed = false;
-                                current_character_pity = 0;
-                            } else {
-                                current_character_pity = 0;
-                                current_character_guaranteed = true;
-                            }
-                        } else {                                
-                            current_character_pity += 1;
-                        }
+        while (pullsLeft > 0) {
+            let randomValue = Math.random();
+            let currFiveStarChance = COMMON_FIVE_STAR_CHARACTER_CHANCE;
+            let currFiveStarWeaponChance = gameInfo.FIVE_STAR_WEAPON_CHANCE;
+            let currSoftPityIncrement = COMMON_SOFT_PITY_INCREMENT;
+            let currCharacterSoftPity = COMMON_CHARACTER_SOFT_PITY;
+            let currCharacterPity = COMMON_CHARACTER_PITY;
+            let currWeaponSoftPity = COMMON_WEAPON_SOFT_PITY;
+            let currWeaponPity = COMMON_WEAPON_PITY;
+            let currLimitedWeaponChance = gameInfo.LIMITED_WEAPON_CHANCE;
+            let currLimitedCharacterChance = gameInfo.LIMITED_CHARACTER_CHANCE;
+
+            if (weaponCopies > 0 && charSuccesses < characterCopies) {
+                currFiveStarChance += currSoftPityIncrement * Math.max(currCharPity - currCharacterSoftPity, 0);
+
+                if (randomValue <= currFiveStarChance || currCharPity + 1 === currCharacterPity) {
+                    if (currCharacterGuaranteed || Math.random() <= currLimitedCharacterChance) {
+                        charSuccesses++;
+                        currCharacterGuaranteed = false;
+                        currCharPity = 0;
                     } else {
-                        // Cone prob
-                        current_five_star_chance = this.constants.FIVE_STAR_CONE_CHANCE;
-                        current_five_star_chance += this.constants.SOFT_PITY_INCREMENT * Math.max(current_cone_pity - this.constants.CONE_SOFT_PITY, 0.0);
-        
-                        if (random_value < current_five_star_chance || current_cone_pity + 1 == this.constants.CONE_PITY) {
-                            if (current_cone_guaranteed || random.random() < this.constants.LIMITED_CONE_CHANCE) {
-                                cone_successes += 1;
-                                current_cone_guaranteed = false;
-                                current_cone_pity = 0;
-                            } else {
-                                current_cone_pity = 0;
-                                current_cone_guaranteed = true;
-                            }
-                        } else {
-                            current_cone_pity += 1;
-                        }
+                        currCharPity = 0;
+                        currCharacterGuaranteed = true;
                     }
-        
-                    pulls_left -= 1;
-                
+                } else {
+                    currCharPity++;
                 }
-        
-                if (character_success >= character_copies && cone_successes >= cone_copies) {
-                    successful_sims += 1;
+            } else {
+                currFiveStarChance = currFiveStarWeaponChance;
+                currFiveStarChance += currSoftPityIncrement * Math.max(currWeaponPity - currWeaponSoftPity, 0);
+
+                if (randomValue <= currFiveStarChance || currWeaponPity + 1 === currWeaponPity) {
+                    if (currWeaponGuaranteed || Math.random() < currLimitedWeaponChance) {
+                        weaponSuccesses++;
+                        currWeaponGuaranteed = false;
+                        currWeaponPity = 0;
+                    } else {
+                        currWeaponPity = 0;
+                        currWeaponGuaranteed = true;
+                    }
+                } else {
+                    currWeaponPity++;
                 }
             }
-            return (successful_sims / num_simulations).toFixed(6);
+            pullsLeft--;
         }
 
-        
+        if (charSuccesses >= characterCopies && weaponSuccesses >= weaponCopies) {
+            successfulSimulations++;
+        }
+    }
+
+    return successfulSimulations / numSimulations;
 }
