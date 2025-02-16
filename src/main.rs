@@ -13,6 +13,7 @@ lazy_static! {
     static ref COMMON_CHARACTER_PITY: i32 = 90;
     static ref COMMON_WEAPON_SOFT_PITY: i32 = 64;
     static ref COMMON_WEAPON_PITY: i32 = 80;
+    static ref COMMON_FOUR_STAR_CHARACTER_CHANCE: f64 = 0.051;
 }
 
 struct GameData {
@@ -31,22 +32,24 @@ impl GameData {
     }
 }
 
-fn simulate_game(game_data: &GameData, num_simulations: i32) -> Vec<(i32, i32, i32, i32)> {
+fn simulate_game(game_data: &GameData, num_simulations: i32, pull_for_character: bool) -> Vec<(i32, i32, i32, i32)> {
     let mut results = Vec::new();
     for _ in 0..num_simulations {
         let mut pulls = 0;
-        let mut char_successes = 0;
+        let mut five_char_successes = 0;
         let mut weapon_successes = 0;
         let mut limited_successes = 0;
         let mut curr_weapon_pity = 0;
         let mut curr_char_pity = 0;
         let mut curr_weapon_guaranteed = false;
         let mut curr_character_guaranteed = false;
+        let mut four_char_success = 0;
 
         loop {
             pulls += 1;
             let random_value: f64 = thread_rng().gen();
             let curr_five_star_chance = *COMMON_FIVE_STAR_CHARACTER_CHANCE;
+            let curr_four_star_chance = *COMMON_FOUR_STAR_CHARACTER_CHANCE;
             let curr_five_star_weapon_chance = game_data.five_star_weapon_chance;
             let curr_soft_pity_increment = *COMMON_SOFT_PITY_INCREMENT;
             let curr_character_soft_pity = *COMMON_CHARACTER_SOFT_PITY;
@@ -61,7 +64,7 @@ fn simulate_game(game_data: &GameData, num_simulations: i32) -> Vec<(i32, i32, i
 
                 if random_value <= curr_five_star_chance_with_pity || curr_char_pity + 1 == curr_character_pity {
                     if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
-                        char_successes += 1;
+                        five_char_successes += 1;
                         curr_character_guaranteed = false;
                         curr_char_pity = 0;
                         limited_successes += 1;
@@ -69,7 +72,9 @@ fn simulate_game(game_data: &GameData, num_simulations: i32) -> Vec<(i32, i32, i
                         curr_char_pity = 0;
                         curr_character_guaranteed = true;
                     }
-                    break;
+                    if pull_for_character { // pull until 1 5 star
+                        break;
+                    }
                 } else {
                     curr_char_pity += 1;
                 }
@@ -85,9 +90,14 @@ fn simulate_game(game_data: &GameData, num_simulations: i32) -> Vec<(i32, i32, i
                         curr_weapon_pity = 0;
                         curr_weapon_guaranteed = true;
                     }
+                    if !pull_for_character { // pull until 1 weapon
+                        break
+                    }
                 } else {
                     curr_weapon_pity += 1;
                 }
+            } else {
+                let
             }
         }
 
@@ -96,6 +106,7 @@ fn simulate_game(game_data: &GameData, num_simulations: i32) -> Vec<(i32, i32, i
 
     results
 }
+
 
 fn write_to_csv(filename: &str, data: Vec<(i32, i32, i32, i32)>) {
     let file = File::create(filename).unwrap();
@@ -117,9 +128,10 @@ fn main() {
     let num_threads = 4;
     let num_simulations_per_thread = num_simulations / num_threads;
 
+    // character
     let hsr_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
         .map(|_| {
-            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_hsr, num_simulations_per_thread);
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_hsr, num_simulations_per_thread, true);
             results
         })
         .flatten()
@@ -127,7 +139,7 @@ fn main() {
 
     let genshin_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
         .map(|_| {
-            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_genshin, num_simulations_per_thread);
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_genshin, num_simulations_per_thread, true);
             results
         })
         .flatten()
@@ -135,13 +147,42 @@ fn main() {
 
     let zzz_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
         .map(|_| {
-            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_zzz, num_simulations_per_thread);
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_zzz, num_simulations_per_thread, true);
             results
         })
         .flatten()
         .collect();
 
-    write_to_csv("hsr.csv", hsr_results);
-    write_to_csv("genshin.csv", genshin_results);
-    write_to_csv("zzz.csv", zzz_results);
+    write_to_csv("hsr_character.csv", hsr_results);
+    write_to_csv("genshin_character.csv", genshin_results);
+    write_to_csv("zzz_character.csv", zzz_results);
+
+    // weapon
+    let hsr_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
+        .map(|_| {
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_hsr, num_simulations_per_thread, false);  // Changed to false for weapon
+            results
+        })
+        .flatten()
+        .collect();
+
+    let genshin_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
+        .map(|_| {
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_genshin, num_simulations_per_thread, false);  // Changed to false for weapon
+            results
+        })
+        .flatten()
+        .collect();
+
+    let zzz_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
+        .map(|_| {
+            let results: Vec<(i32, i32, i32, i32)> = simulate_game(&game_data_zzz, num_simulations_per_thread, false);  // Changed to false for weapon
+            results
+        })
+        .flatten()
+        .collect();
+
+    write_to_csv("hsr_weapon.csv", hsr_results);
+    write_to_csv("genshin_weapon.csv", genshin_results);
+    write_to_csv("zzz_weapon.csv", zzz_results);
 }
