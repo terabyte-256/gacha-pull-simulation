@@ -572,3 +572,4 @@ _site/
 Gemfile.lock
 
 .github/
+.DS_Store
