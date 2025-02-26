@@ -6,27 +6,32 @@ This project simulates and analyzes gacha pull statistics for various games incl
 
 ```
 gacha-pull-simulation/
-├── gacha_pull_simulation.pdf # Analysis
-├── assets/
-│     ├── src/
-│     │   ├── main.rs         # Main function
-│     │   ├── Honkai.rs       # Honkai: Star Rail simulation Engine
-│     │   ├── Arknights.rs    # Arknights simulation Engine
-│     │   └── WutheringWaves.rs # Wuthering Waves simulation Engine
-│     ├── analysis/
-│     │   └── gacha_pull_simulation.rmd  # R Markdown analysis
-├── js/
-│   └── gacha-calculator.js  # Interactive probability calculator
-├── index.html          # Web interface
-└── data/              # Generated CSV files
-    ├── hsr_character.csv        # Honkai: Star Rail simulation data
-    ├── hsr_weapon.csv
-    ├── genshin_character.csv    # Genshin Impact simulation data
-    ├── genshin_weapon.csv
-    ├── zzz_character.csv        # Zenless Zone Zero simulation data
-    ├── zzz_weapon.csv
-    ├── arknights_data.csv  # Arknights simulation data
-    └── wuwa_data.csv     # Wuthering Waves simulation data
+├── analysis/
+│   ├── gacha_pull_simulation.pdf
+│   └── gacha_pull_simulation.rmd
+├── src/
+│   ├── main.rs
+│   ├── honkai.rs
+│   ├── arknights.rs
+│   └── wuthering_waves.rs
+├── web/
+│   ├── index.html
+│   └── js/
+│       └── gacha-calculator.js
+├── data/
+│   ├── hsr/
+│   │   ├── character.csv
+│   │   └── weapon.csv
+│   ├── genshin/
+│   │   ├── character.csv
+│   │   └── weapon.csv
+│   ├── zzz/
+│   │   ├── character.csv
+│   │   └── weapon.csv
+│   ├── arknights/
+│   │   └── data.csv
+│   └── wuwa/
+│       └── data.csv
 ```
 
 ## Prerequisites

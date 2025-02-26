@@ -1,14 +1,20 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::path::Path;
 use Honkai;
 use Wuwa;
-use Honkai;
+use Arknights;
 
-
-fn honkai_write_to_csv(filename: &str, data: Vec<(i32, i32, i32, i32)>) {
-    let file = File::create(filename).unwrap();
+fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32)>) {
+    // Ensure directory exists
+    let path = Path::new(filepath);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    
+    let file = File::create(filepath).unwrap();
     let mut writer = std::io::BufWriter::new(file);
 
     writer.write_all("Pulls,Limited,Weapons,Characters\n".as_bytes()).unwrap();
@@ -17,7 +23,6 @@ fn honkai_write_to_csv(filename: &str, data: Vec<(i32, i32, i32, i32)>) {
         writer.write_all(format!("{},{},{},{}\n", pulls, limited, weapons, characters).as_bytes()).unwrap();
     }
 }
-
 
 fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
     let games = [
@@ -32,14 +37,14 @@ fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
             .map(|_| simulate_game(game_data, num_simulations_per_thread, true))
             .flatten()
             .collect();
-        honkai_write_to_csv(&format!("{}_character.csv", game_name), char_results);
+        honkai_write_to_csv(&format!("data/{}/character.csv", game_name), char_results);
 
         // Weapon banner simulation
         let weapon_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
             .map(|_| simulate_game(game_data, num_simulations_per_thread, false))
             .flatten()
             .collect();
-        honkai_write_to_csv(&format!("{}_weapon.csv", game_name), weapon_results);
+        honkai_write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
     }
 }
 
@@ -51,31 +56,34 @@ fn main() {
     simulate_honkai_games(num_threads, num_simulations_per_thread);
 
     let wuwa_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
-        .map(|_| Wuwa::simulate_game(num_simulations_per_thread))
+        .map(|_| Wuwa::simulate_game(num_simulations_per_thread, true))
         .flatten()
         .collect();
 
-    let arknights_results: Vec<(i32, i32, i32, i32)> = (0..num_threads)
+    let arknights_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
         .map(|_| Arknights::pull(num_simulations_per_thread))
         .flatten()
         .collect();
 
-    let wuwa_file = File::create("wuwa_data.csv").unwrap();
+    // Ensure directories exist
+    fs::create_dir_all("data/wuwa").unwrap();
+    fs::create_dir_all("data/arknights").unwrap();
+
+    let wuwa_file = File::create("data/wuwa/data.csv").unwrap();
     let mut wuwa_writer = std::io::BufWriter::new(wuwa_file);
 
-    writer.write_all("Pulls,Five Stars,Four Stars,Limited Four Stars,Three Stars\n".as_bytes()).unwrap();
+    wuwa_writer.write_all("Pulls,Five Stars,Four Stars,Limited Four Stars,Three Stars\n".as_bytes()).unwrap();
 
     for (pulls, five_star, four_star, limited_four_star, three_star) in wuwa_results {
-        writer.write_all(format!("{},{},{},{},{}\n", pulls, five_star, four_star, limited_four_star, three_star).as_bytes()).unwrap();
+        wuwa_writer.write_all(format!("{},{},{},{},{}\n", pulls, five_star, four_star, limited_four_star, three_star).as_bytes()).unwrap();
     }
 
-    let arknights_file = File::create("arknights_data.csv").unwrap();
+    let arknights_file = File::create("data/arknights/data.csv").unwrap();
     let mut arknights_writer = std::io::BufWriter::new(arknights_file);
 
     arknights_writer.write_all("Pulls,Six Stars,Five Stars,Four Stars,Three Stars\n".as_bytes()).unwrap();
 
     for (pulls, six_star, five_star, four_star, three_star) in arknights_results {
-        arknights_writer.write_all(format!("{},{},{},{},{},{}\n", pulls, six_star, five_star, four_star, three_star).as_bytes()).unwrap();
+        arknights_writer.write_all(format!("{},{},{},{},{}\n", pulls, six_star, five_star, four_star, three_star).as_bytes()).unwrap();
     }
-
 }
