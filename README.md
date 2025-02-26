@@ -6,15 +6,17 @@ This project simulates and analyzes gacha pull statistics for various games incl
 
 ```
 gacha-pull-simulation/
-├── src/
-│   ├── main.rs         # Main simulation engine
-│   ├── models/         # Game-specific probability models
-│   └── utils/          # Helper functions and utilities
+├── gacha_pull_simulation.pdf # Analysis
+├── assets/
+│     ├── src/
+│     │   ├── main.rs         # Main function
+│     │   ├── Honkai.rs       # Honkai: Star Rail simulation Engine
+│     │   ├── Arknights.rs    # Arknights simulation Engine
+│     │   └── WutheringWaves.rs # Wuthering Waves simulation Engine
+│     ├── analysis/
+│     │   └── gacha_pull_simulation.rmd  # R Markdown analysis
 ├── js/
-│   ├── gacha-calculator.js  # Interactive probability calculator
-│   └── visualization.js     # Data visualization components
-├── analysis/
-│   └── gacha_pull_simulation.rmd  # R Markdown analysis
+│   └── gacha-calculator.js  # Interactive probability calculator
 ├── index.html          # Web interface
 └── data/              # Generated CSV files
     ├── hsr_character.csv        # Honkai: Star Rail simulation data
