@@ -29,11 +29,11 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
 }
 
 fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) {
-    let games = [
+    let games = Arc::new([
         ("hsr", GameData::new(0.008, 0.5, 0.75)),
         ("genshin", GameData::new(0.007, 0.55, 0.75)),
         ("zzz", GameData::new(0.01, 0.5, 0.75)),
-    ];
+    ]);
 
     for (game_name, game_data) in games.iter() {
         let game_name = game_name.to_string(); // Create owned copy of game name
