@@ -35,19 +35,22 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
 
 fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) {
     let games = Arc::new(vec![
-            Game {
-                name: String::from("hsr"),
-                data: GameData::new(0.008, 0.5, 0.75),
-            },
-            Game {
-                name: String::from("genshin"),
-                data: GameData::new(0.007, 0.55, 0.75),
-            },
-            Game {
-                name: String::from("zzz"),
-                data: GameData::new(0.01, 0.5, 0.75),
-            },
-        ]);
+        Game {
+            name: String::from("hsr"),
+            data: GameData::new(0.008, 0.5, 0.75),
+        },
+        Game {
+            name: String::from("genshin"),
+            data: GameData::new(0.007, 0.55, 0.75),
+        },
+        Game {
+            name: String::from("zzz"),
+            data: GameData::new(0.01, 0.5, 0.75),
+        },
+    ]);
+
+    let games_clone = Arc::clone(&games);
+    let mut handles = vec![];
 
     for game in games.iter() {
         let game_name = &game.name;
@@ -56,8 +59,6 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         // Character banner simulation
         let (tx, rx) = mpsc::channel();
         let game_data = Arc::new(game_data.clone());
-
-        let mut handles = vec![];
 
         for _ in 0..num_threads {
             let tx = tx.clone();
@@ -69,17 +70,16 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
                 tx.send((game_name_copy, results)).unwrap();
             });
             handles.push(handle);
-
         }
 
-        for handle in handles {
+        for handle in handles.drain(..) {
             handle.join().unwrap();
         }
 
         drop(tx);
 
         let mut char_results = Vec::new();
-        for (received_game_name, received_results) in rx {
+        for (_, received_results) in rx {
             char_results.extend(received_results);
         }
 
@@ -89,8 +89,6 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         let (tx, rx) = mpsc::channel();
 
         let game_data = Arc::new(game_data.clone());
-
-        let mut handles = vec![];
 
         for _ in 0..num_threads {
             let tx = tx.clone();
@@ -104,20 +102,19 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
             handles.push(handle);
         }
 
-        for handle in handles {
+        for handle in handles.drain(..) {
             handle.join().unwrap();
         }
 
         drop(tx);
 
         let mut weapon_results = Vec::new();
-        for (received_game_name, received_results) in rx {
+        for (_, received_results) in rx {
             weapon_results.extend(received_results);
         }
 
         honkai_write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
     }
-
 }
 
 fn main() {
