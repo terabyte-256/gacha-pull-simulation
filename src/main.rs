@@ -7,7 +7,8 @@ use std::fs::{self, File};
 use std::io::{Write};
 use std::path::Path;
 use std::thread;
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc};
+
 use crate::Arknights::Arknights::a_simulate_game;
 use crate::Wuwa::Wuwa::w_simulate_game;
 
@@ -29,11 +30,11 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
 }
 
 fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
-    let games = [
+    let games = Arc::new([
         ("hsr", GameData::new(0.008, 0.5, 0.75)),
         ("genshin", GameData::new(0.007, 0.55, 0.75)),
         ("zzz", GameData::new(0.01, 0.5, 0.75)),
-    ];
+    ]);
 
     for (game_name, game_data) in games.iter() {
         let game_name = game_name.to_string(); // Create owned copy of game name
