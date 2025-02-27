@@ -125,7 +125,12 @@ fn simulate_in_threads(
 /// Simulates Wuwa and Arknights games and writes results to CSV files.
 fn simulate_other_games(num_threads: usize, num_simulations_per_thread: usize) -> io::Result<()> {
     // Wuwa simulation
-    let wuwa_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, w_simulate_game)?;
+    let wuwa_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, |n| {
+        w_simulate_game(n)
+            .into_iter()
+            .map(|(a, b, c, d, e)| vec![a, b, c, d, e])
+            .collect()
+    })?;
     write_to_csv(
         "data/wuwa/data.csv",
         "Pulls,Five Stars,Four Stars,Limited Four Stars,Three Stars\n",
@@ -133,7 +138,12 @@ fn simulate_other_games(num_threads: usize, num_simulations_per_thread: usize) -
     )?;
 
     // Arknights simulation
-    let arknights_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, a_simulate_game)?;
+    let arknights_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, |n| {
+        a_simulate_game(n)
+            .into_iter()
+            .map(|(a, b, c, d, e)| vec![a, b, c, d, e])
+            .collect()
+    })?;
     write_to_csv(
         "data/arknights/data.csv",
         "Pulls,Six Stars,Five Stars,Four Stars,Three Stars\n",
