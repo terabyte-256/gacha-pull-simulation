@@ -49,8 +49,9 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
             },
         ]);
 
-    for (game_name, game_data) in games.iter() {
-        let game_name = game_name.to_string(); // Create owned copy of game name
+    for game in games.iter() {
+        let game_name = &game.name;
+        let game_data = &game.data;
 
         // Character banner simulation
         let (tx, rx) = mpsc::channel();
@@ -61,18 +62,18 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = Arc::clone(&game_data);
-            let game_name_copy = game_name.clone();
+            let game_name_copy = game_name.to_string();
 
             let handle = thread::spawn(move || {
-                            let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
-                            tx.send((game_name_copy, results)).unwrap();
-                        });
-                        handles.push(handle);
+                let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
+                tx.send((game_name_copy, results)).unwrap();
+            });
+            handles.push(handle);
 
         }
 
         for handle in handles {
-                    handle.join().unwrap();
+            handle.join().unwrap();
         }
 
         drop(tx);
@@ -94,7 +95,7 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = Arc::clone(&game_data);
-            let game_name_copy = game_name.clone();
+            let game_name_copy = game_name.to_string();
 
             let handle = thread::spawn(move || {
                 let results = h_simulate_game(&game_data, num_simulations_per_thread, false);
@@ -116,6 +117,7 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
 
         honkai_write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
     }
+
 }
 
 fn main() {
