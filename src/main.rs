@@ -7,8 +7,7 @@ use std::fs::{self, File};
 use std::io::{Write};
 use std::path::Path;
 use std::thread;
-use std::sync::{mpsc, Arc};
-
+use std::sync::mpsc;
 use crate::Arknights::Arknights::a_simulate_game;
 use crate::Wuwa::Wuwa::w_simulate_game;
 
@@ -29,28 +28,37 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
     }
 }
 
-fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
-    let games = Arc::new([
+fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) {
+    let games = [
         ("hsr", GameData::new(0.008, 0.5, 0.75)),
         ("genshin", GameData::new(0.007, 0.55, 0.75)),
         ("zzz", GameData::new(0.01, 0.5, 0.75)),
-    ]);
+    ];
 
     for (game_name, game_data) in games.iter() {
         let game_name = game_name.to_string(); // Create owned copy of game name
 
         // Character banner simulation
         let (tx, rx) = mpsc::channel();
+        let game_data = Arc::new(game_data.clone());
+
+        let mut handles = vec![];
 
         for _ in 0..num_threads {
             let tx = tx.clone();
-            let game_data = game_data.clone();
+            let game_data = Arc::clone(game_data);
             let game_name_copy = game_name.clone();
 
-            thread::spawn(move || {
-                let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
-                tx.send((game_name_copy, results)).unwrap();
-            });
+            let handle = thread::spawn(move || {
+                            let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
+                            tx.send((game_name_copy, results)).unwrap();
+                        });
+                        handles.push(handle);
+
+        }
+
+        for handle in handles {
+                    handle.join().unwrap();
         }
 
         drop(tx);
@@ -65,15 +73,24 @@ fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
         // Weapon banner simulation
         let (tx, rx) = mpsc::channel();
 
+        let game_data = Arc::new(game_data.clone());
+
+        let mut handles = vec![];
+
         for _ in 0..num_threads {
             let tx = tx.clone();
-            let game_data = game_data.clone();
+            let game_data = Arc::clone(&game_data);
             let game_name_copy = game_name.clone();
 
-            thread::spawn(move || {
+            let handle = thread::spawn(move || {
                 let results = h_simulate_game(&game_data, num_simulations_per_thread, false);
                 tx.send((game_name_copy, results)).unwrap();
             });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
         }
 
         drop(tx);
