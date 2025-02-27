@@ -17,7 +17,7 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
-    
+
     let file = File::create(filepath).unwrap();
     let mut writer = std::io::BufWriter::new(file);
 
@@ -37,51 +37,51 @@ fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
 
     for (game_name, game_data) in games.iter() {
         let game_name = game_name.to_string(); // Create owned copy of game name
-        
+
         // Character banner simulation
         let (tx, rx) = mpsc::channel();
-        
+
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = game_data.clone();
             let game_name_copy = game_name.clone();
-            
+
             thread::spawn(move || {
                 let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
                 tx.send((game_name_copy, results)).unwrap();
             });
         }
-        
+
         drop(tx);
-        
+
         let mut char_results = Vec::new();
         for (received_game_name, received_results) in rx {
             char_results.extend(received_results);
         }
-        
+
         honkai_write_to_csv(&format!("data/{}/character.csv", game_name), char_results);
 
         // Weapon banner simulation
         let (tx, rx) = mpsc::channel();
-        
+
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = game_data.clone();
             let game_name_copy = game_name.clone();
-            
+
             thread::spawn(move || {
                 let results = h_simulate_game(&game_data, num_simulations_per_thread, false);
                 tx.send((game_name_copy, results)).unwrap();
             });
         }
-        
+
         drop(tx);
-        
+
         let mut weapon_results = Vec::new();
         for (received_game_name, received_results) in rx {
             weapon_results.extend(received_results);
         }
-        
+
         honkai_write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
     }
 }
@@ -95,7 +95,7 @@ fn main() {
 
     // Wuwa simulation with actual threads
     let (wuwa_tx, wuwa_rx) = mpsc::channel();
-    
+
     for _ in 0..num_threads {
         let tx = wuwa_tx.clone();
         thread::spawn(move || {
@@ -103,9 +103,9 @@ fn main() {
             tx.send(results).unwrap();
         });
     }
-    
+
     drop(wuwa_tx);
-    
+
     let mut wuwa_results = Vec::new();
     for received_results in wuwa_rx {
         wuwa_results.extend(received_results);
@@ -113,7 +113,7 @@ fn main() {
 
     // Arknights simulation with actual threads
     let (arknights_tx, arknights_rx) = mpsc::channel();
-    
+
     for _ in 0..num_threads {
         let tx = arknights_tx.clone();
         thread::spawn(move || {
@@ -121,9 +121,9 @@ fn main() {
             tx.send(results).unwrap();
         });
     }
-    
+
     drop(arknights_tx);
-    
+
     let mut arknights_results = Vec::new();
     for received_results in arknights_rx {
         arknights_results.extend(received_results);
