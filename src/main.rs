@@ -1,5 +1,6 @@
 mod Wuwa;
 mod Arknights;
+mod Honkai
 
 use crate::Honkai::Honkai::{h_simulate_game, GameData};
 use std::fs::{self, File};
