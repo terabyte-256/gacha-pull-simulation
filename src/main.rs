@@ -11,6 +11,11 @@ use std::sync::{Arc, mpsc};
 use crate::Arknights::Arknights::a_simulate_game;
 use crate::Wuwa::Wuwa::w_simulate_game;
 
+struct Game {
+    name: String,
+    data: GameData,
+}
+
 fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
     // Ensure directory exists
     let path = Path::new(filepath);
@@ -29,11 +34,20 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
 }
 
 fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) {
-    let games = Arc::new([
-        ("hsr", GameData::new(0.008, 0.5, 0.75)),
-        ("genshin", GameData::new(0.007, 0.55, 0.75)),
-        ("zzz", GameData::new(0.01, 0.5, 0.75)),
-    ]);
+    let games = Arc::new(vec![
+            Game {
+                name: String::from("hsr"),
+                data: GameData::new(0.008, 0.5, 0.75),
+            },
+            Game {
+                name: String::from("genshin"),
+                data: GameData::new(0.007, 0.55, 0.75),
+            },
+            Game {
+                name: String::from("zzz"),
+                data: GameData::new(0.01, 0.5, 0.75),
+            },
+        ]);
 
     for (game_name, game_data) in games.iter() {
         let game_name = game_name.to_string(); // Create owned copy of game name
