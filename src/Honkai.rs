@@ -1,6 +1,4 @@
 pub mod Honkai {
-    use std::sync::{Arc, Mutex};
-    use std::thread;
     use rand::Rng;
     use rand::thread_rng;
     use lazy_static::lazy_static;
@@ -31,7 +29,7 @@ pub mod Honkai {
         }
     }
 
-    pub fn simulate_game(game_data: &GameData, num_simulations: i32, pull_for_character: bool) -> Vec<(i32, i32, i32, i32)> {
+    pub fn h_simulate_game(game_data: &GameData, num_simulations: i32, pull_for_character: bool) -> Vec<(i32, i32, i32, i32, i32)> {
         let mut results = Vec::new();
         for _ in 0..num_simulations {
             let mut pulls = 0;
@@ -93,23 +91,17 @@ pub mod Honkai {
                         if !pull_for_character { // pull until 1 weapon
                             break
                         }
-                    } else {
-                        curr_weapon_pity += 1;
-                    }
-                } else {
-                    if random_value <= curr_four_star_chance {
+                    } else if random_value <= curr_four_star_chance {
                         four_char_success += 1;
                     } else {
                         three_char_success += 1;
                     }
-                        curr_char_pity += 1;
-                    }
+                    curr_char_pity += 1;
                 }
             }
 
             results.push((pulls, limited_successes, weapon_successes, four_char_success, three_char_success));
         }
-
         results
     }
 }
