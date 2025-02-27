@@ -33,7 +33,7 @@ fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
     }
 }
 
-fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) {
+fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
     let games = Arc::new(vec![
         Game {
             name: String::from("hsr"),
@@ -49,9 +49,6 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         },
     ]);
 
-    let games_clone = Arc::clone(&games);
-    let mut handles = vec![];
-
     for game in games.iter() {
         let game_name = &game.name;
         let game_data = &game.data;
@@ -60,6 +57,7 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
         let (tx, rx) = mpsc::channel();
         let game_data = Arc::new(game_data.clone());
 
+        let mut handles = vec![];
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = Arc::clone(&game_data);
@@ -90,6 +88,7 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
 
         let game_data = Arc::new(game_data.clone());
 
+        let mut handles = vec![];
         for _ in 0..num_threads {
             let tx = tx.clone();
             let game_data = Arc::clone(&game_data);
