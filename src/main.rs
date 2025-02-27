@@ -7,7 +7,7 @@ use std::fs::{self, File};
 use std::io::{Write};
 use std::path::Path;
 use std::thread;
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
 use crate::Arknights::Arknights::a_simulate_game;
 use crate::Wuwa::Wuwa::w_simulate_game;
 
