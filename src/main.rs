@@ -46,7 +46,7 @@ fn simulate_honkai_games<'a>(num_threads: i32, num_simulations_per_thread: i32) 
 
         for _ in 0..num_threads {
             let tx = tx.clone();
-            let game_data = Arc::clone(game_data);
+            let game_data = Arc::clone(&game_data);
             let game_name_copy = game_name.clone();
 
             let handle = thread::spawn(move || {
