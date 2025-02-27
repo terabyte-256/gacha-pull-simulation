@@ -3,179 +3,191 @@ mod Arknights;
 mod Honkai;
 
 use crate::Honkai::Honkai::{h_simulate_game, GameData};
-use std::fs::{self, File};
-use std::io::Write;
-use std::path::Path;
-use std::sync::{Arc, mpsc};
-use std::thread;
 use crate::Arknights::Arknights::a_simulate_game;
 use crate::Wuwa::Wuwa::w_simulate_game;
+use std::fs::{self, File};
+use std::io::{self, Write};
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::mpsc;
+use std::thread;
 
-fn honkai_write_to_csv(filepath: &str, data: Vec<(i32, i32, i32, i32, i32)>) {
+/// Writes simulation results to a CSV file.
+fn write_to_csv(filepath: &str, header: &str, data: Vec<Vec<i32>>) -> io::Result<()> {
     // Ensure directory exists
     let path = Path::new(filepath);
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).unwrap();
+        fs::create_dir_all(parent)?;
     }
 
-    let file = File::create(filepath).unwrap();
-    let mut writer = std::io::BufWriter::new(file);
+    let file = File::create(filepath)?;
+    let mut writer = io::BufWriter::new(file);
 
-    writer
-        .write_all("Pulls,Limited,Weapons,Characters,Three Stars\n".as_bytes())
-        .unwrap();
+    // Write header
+    writer.write_all(header.as_bytes())?;
 
-    for (pulls, limited, weapons, characters, three_stars) in data {
-        writer
-            .write_all(format!("{},{},{},{},{}\n", pulls, limited, weapons, characters, three_stars).as_bytes())
-            .unwrap();
+    // Write data rows
+    for row in data {
+        let row_str = row
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        writer.write_all(format!("{}\n", row_str).as_bytes())?;
     }
+
+    Ok(())
 }
 
-fn simulate_honkai_games(num_threads: i32, num_simulations_per_thread: i32) {
+/// Simulates Honkai games and writes results to CSV files.
+fn simulate_honkai_games(num_threads: usize, num_simulations_per_thread: usize) -> io::Result<()> {
     let games = vec![
         ("hsr", GameData::new(0.008, 0.5, 0.75)),
         ("genshin", GameData::new(0.007, 0.55, 0.75)),
         ("zzz", GameData::new(0.01, 0.5, 0.75)),
     ];
 
-    // Wrap games in an Arc to share ownership across threads
     let games = Arc::new(games);
 
     for game in games.iter() {
         let game_name = game.0.to_string();
         let game_data = Arc::new(game.1.clone());
 
-        // Character banner simulation
-        let (tx, rx) = mpsc::channel();
+        // Simulate character banner
+        let char_results = simulate_in_threads(
+            num_threads,
+            num_simulations_per_thread,
+            Arc::clone(&game_data),
+            true,
+        )?;
+        write_to_csv(
+            &format!("data/{}/character.csv", game_name),
+            "Pulls,Limited,Weapons,Characters,Three Stars\n",
+            char_results,
+        )?;
 
-        let mut handles = vec![];
-        for _ in 0..num_threads {
-            let tx = tx.clone();
-            let game_data = Arc::clone(&game_data);
-            let game_name_copy = game_name.clone();
-
-            let handle = thread::spawn(move || {
-                let results = h_simulate_game(&game_data, num_simulations_per_thread, true);
-                tx.send((game_name_copy, results)).unwrap();
-            });
-            handles.push(handle);
-        }
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
-
-        drop(tx);
-
-        let mut char_results = Vec::new();
-        for (_, received_results) in rx {
-            char_results.extend(received_results);
-        }
-
-        honkai_write_to_csv(&format!("data/{}/character.csv", game_name), char_results);
-
-        // Weapon banner simulation
-        let (tx, rx) = mpsc::channel();
-
-        let mut handles = vec![];
-        for _ in 0..num_threads {
-            let tx = tx.clone();
-            let game_data = Arc::clone(&game_data);
-            let game_name_copy = game_name.clone();
-
-            let handle = thread::spawn(move || {
-                let results = h_simulate_game(&game_data, num_simulations_per_thread, false);
-                tx.send((game_name_copy, results)).unwrap();
-            });
-            handles.push(handle);
-        }
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
-
-        drop(tx);
-
-        let mut weapon_results = Vec::new();
-        for (_, received_results) in rx {
-            weapon_results.extend(received_results);
-        }
-
-        honkai_write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
+        // Simulate weapon banner
+        let weapon_results = simulate_in_threads(
+            num_threads,
+            num_simulations_per_thread,
+            Arc::clone(&game_data),
+            false,
+        )?;
+        write_to_csv(
+            &format!("data/{}/weapon.csv", game_name),
+            "Pulls,Limited,Weapons,Characters,Three Stars\n",
+            weapon_results,
+        )?;
     }
+
+    Ok(())
 }
 
-fn main() {
+/// Simulates games in multiple threads and collects results.
+fn simulate_in_threads(
+    num_threads: usize,
+    num_simulations_per_thread: usize,
+    game_data: Arc<GameData>,
+    is_character_banner: bool,
+) -> io::Result<Vec<Vec<i32>>> {
+    let (tx, rx) = mpsc::channel();
+
+    let mut handles = vec![];
+    for _ in 0..num_threads {
+        let tx = tx.clone();
+        let game_data = Arc::clone(&game_data);
+
+        let handle = thread::spawn(move || {
+            let results = h_simulate_game(&game_data, num_simulations_per_thread as i32, is_character_banner);
+            tx.send(results).unwrap();
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    drop(tx);
+
+    let mut all_results = Vec::new();
+    for received_results in rx {
+        all_results.extend(received_results);
+    }
+
+    Ok(all_results)
+}
+
+/// Simulates Wuwa and Arknights games and writes results to CSV files.
+fn simulate_other_games(num_threads: usize, num_simulations_per_thread: usize) -> io::Result<()> {
+    // Wuwa simulation
+    let wuwa_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, w_simulate_game)?;
+    write_to_csv(
+        "data/wuwa/data.csv",
+        "Pulls,Five Stars,Four Stars,Limited Four Stars,Three Stars\n",
+        wuwa_results,
+    )?;
+
+    // Arknights simulation
+    let arknights_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, a_simulate_game)?;
+    write_to_csv(
+        "data/arknights/data.csv",
+        "Pulls,Six Stars,Five Stars,Four Stars,Three Stars\n",
+        arknights_results,
+    )?;
+
+    Ok(())
+}
+
+/// Simulates a game using multiple threads and collects results.
+fn simulate_game_with_threads<F>(
+    num_threads: usize,
+    num_simulations_per_thread: usize,
+    simulate_fn: F,
+) -> io::Result<Vec<Vec<i32>>>
+where
+    F: Fn(i32) -> Vec<Vec<i32>> + Send + Sync + 'static,
+{
+    let (tx, rx) = mpsc::channel();
+
+    let simulate_fn = Arc::new(simulate_fn);
+    let mut handles = vec![];
+
+    for _ in 0..num_threads {
+        let tx = tx.clone();
+        let simulate_fn = Arc::clone(&simulate_fn);
+
+        let handle = thread::spawn(move || {
+            let results = simulate_fn(num_simulations_per_thread as i32);
+            tx.send(results).unwrap();
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    drop(tx);
+
+    let mut all_results = Vec::new();
+    for received_results in rx {
+        all_results.extend(received_results);
+    }
+
+    Ok(all_results)
+}
+
+fn main() -> io::Result<()> {
     let num_simulations = 1_000_000;
-    let num_threads = std::thread::available_parallelism().unwrap().get();
+    let num_threads = std::thread::available_parallelism()?.get();
     let num_simulations_per_thread = num_simulations / num_threads;
 
-    simulate_honkai_games(num_threads as i32, num_simulations_per_thread as i32);
+    // Simulate Honkai games
+    simulate_honkai_games(num_threads, num_simulations_per_thread)?;
 
-    // Wuwa simulation with actual threads
-    let (wuwa_tx, wuwa_rx) = mpsc::channel();
+    // Simulate Wuwa and Arknights games
+    simulate_other_games(num_threads, num_simulations_per_thread)?;
 
-    for _ in 0..num_threads {
-        let tx = wuwa_tx.clone();
-        thread::spawn(move || {
-            let results = w_simulate_game(num_simulations_per_thread as i32);
-            tx.send(results).unwrap();
-        });
-    }
-
-    drop(wuwa_tx);
-
-    let mut wuwa_results = Vec::new();
-    for received_results in wuwa_rx {
-        wuwa_results.extend(received_results);
-    }
-
-    // Arknights simulation with actual threads
-    let (arknights_tx, arknights_rx) = mpsc::channel();
-
-    for _ in 0..num_threads {
-        let tx = arknights_tx.clone();
-        thread::spawn(move || {
-            let results = a_simulate_game(num_simulations_per_thread as i32);
-            tx.send(results).unwrap();
-        });
-    }
-
-    drop(arknights_tx);
-
-    let mut arknights_results = Vec::new();
-    for received_results in arknights_rx {
-        arknights_results.extend(received_results);
-    }
-
-    // Ensure directories exist
-    fs::create_dir_all("data/wuwa").unwrap();
-    fs::create_dir_all("data/arknights").unwrap();
-
-    let wuwa_file = File::create("data/wuwa/data.csv").unwrap();
-    let mut wuwa_writer = std::io::BufWriter::new(wuwa_file);
-
-    wuwa_writer
-        .write_all("Pulls,Five Stars,Four Stars,Limited Four Stars,Three Stars\n".as_bytes())
-        .unwrap();
-
-    for (pulls, five_star, four_star, limited_four_star, three_star) in wuwa_results {
-        wuwa_writer
-            .write_all(format!("{},{},{},{},{}\n", pulls, five_star, four_star, limited_four_star, three_star).as_bytes())
-            .unwrap();
-    }
-
-    let arknights_file = File::create("data/arknights/data.csv").unwrap();
-    let mut arknights_writer = std::io::BufWriter::new(arknights_file);
-
-    arknights_writer
-        .write_all("Pulls,Six Stars,Five Stars,Four Stars,Three Stars\n".as_bytes())
-        .unwrap();
-
-    for (pulls, six_star, five_star, four_star, three_star) in arknights_results {
-        arknights_writer
-            .write_all(format!("{},{},{},{},{}\n", pulls, six_star, five_star, four_star, three_star).as_bytes())
-            .unwrap();
-    }
+    Ok(())
 }
