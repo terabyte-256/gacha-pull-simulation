@@ -99,13 +99,17 @@ fn simulate_in_threads(
 
         let handle = thread::spawn(move || {
             let results = h_simulate_game(&game_data, num_simulations_per_thread as i32, is_character_banner);
-            tx.send(results).unwrap();
+            if let Err(e) = tx.send(results) {
+                eprintln!("Failed to send results: {}", e);
+            }
         });
         handles.push(handle);
     }
 
     for handle in handles {
-        handle.join().unwrap();
+        if let Err(e) = handle.join() {
+            eprintln!("Thread panicked: {:?}", e);
+        }
     }
 
     drop(tx);
@@ -159,13 +163,17 @@ where
 
         let handle = thread::spawn(move || {
             let results = simulate_fn(num_simulations_per_thread as i32);
-            tx.send(results).unwrap();
+            if let Err(e) = tx.send(results) {
+                eprintln!("Failed to send results: {}", e);
+            }
         });
         handles.push(handle);
     }
 
     for handle in handles {
-        handle.join().unwrap();
+        if let Err(e) = handle.join() {
+            eprintln!("Thread panicked: {:?}", e);
+        }
     }
 
     drop(tx);
