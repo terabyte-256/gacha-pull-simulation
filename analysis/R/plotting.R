@@ -121,3 +121,4 @@ plot_rarity_distribution <- function(data_list) {
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     ) %>%
     pivot
+}
