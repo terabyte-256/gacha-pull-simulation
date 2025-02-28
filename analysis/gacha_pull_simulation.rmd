@@ -14,316 +14,213 @@ library(ggplot2)
 library(knitr)
 library(dplyr)
 library(kableExtra)
-library(hexbin)
+library(tidyr)
+library(viridis)
+library(viridisLite)
 knitr::opts_chunk$set(echo = FALSE)
+
+# Source utility scripts
+source("R/load_data.R")
+source("R/stats_utils.R")
+source("R/plotting.R")
 ```
+
+## Loading and Preparing Data
 
 ```{r load_data}
-# Read the simulation results from the CSV file
-results_hsr <- read.csv("./data/hsr.csv")
-results_genshin <- read.csv("./data/genshin.csv")
-results_zzz <- read.csv("./data/zzz.csv")
+# Load all game data
+data_list <- load_game_data()
 
-# Calculate statistics for each game
-calculate_stats <- function(data) {
-    list(
-        total_sims = nrow(data),
-        pulls_mean = mean(data$Pulls),
-        pulls_median = median(data$Pulls),
-        pulls_sd = sd(data$Pulls),
-        pulls_min = min(data$Pulls),
-        pulls_max = max(data$Pulls),
-        limited_ratio = mean(data$Limited),
-        weapons_ratio = mean(data$Weapons),
-        chars_ratio = mean(data$Characters)
-    )
-}
-
-stats_hsr <- calculate_stats(results_hsr)
-stats_genshin <- calculate_stats(results_genshin)
-stats_zzz <- calculate_stats(results_zzz)
+# Prepare combined data for comparative analysis
+all_results <- prepare_combined_data(data_list)
 ```
 
-```{r prepare_data}
-# Combine data for comparison
-results_hsr$Game <- "HSR"
-results_genshin$Game <- "Genshin"
-results_zzz$Game <- "ZZZ"
-all_results <- rbind(results_hsr, results_genshin, results_zzz)
+## Basic Statistics
 
-# Set up a consistent color scheme
-game_colors <- c("HSR" = "#5B9BD5", "Genshin" = "#70AD47", "ZZZ" = "#ED7D31")
+```{r calculate_stats}
+# Calculate basic statistics for each game
+stats_hsr <- calculate_basic_stats(data_list$hsr)
+stats_genshin <- calculate_basic_stats(data_list$genshin)
+stats_zzz <- calculate_basic_stats(data_list$zzz)
+stats_arknights <- calculate_basic_stats(data_list$arknights)
+stats_wuwa <- calculate_basic_stats(data_list$wuwa)
 
-# Prepare combined data
-all_results$Game <- factor(all_results$Game, levels = c("HSR", "Genshin", "ZZZ"))
-```
-
-```{r prepare_success_rates}
-# Calculate success rates
-success_rates <- data.frame(
-    Game = c("HSR", "Genshin", "ZZZ"),
-    Limited = c(stats_hsr$limited_ratio, stats_genshin$limited_ratio, stats_zzz$limited_ratio),
-    Weapons = c(stats_hsr$weapons_ratio, stats_genshin$weapons_ratio, stats_zzz$weapons_ratio),
-    Characters = c(stats_hsr$chars_ratio, stats_genshin$chars_ratio, stats_zzz$chars_ratio)
+# Create a summary table of basic statistics
+basic_stats <- bind_rows(
+  mutate(stats_hsr, Game = "HSR"),
+  mutate(stats_genshin, Game = "Genshin"),
+  mutate(stats_zzz, Game = "ZZZ"),
+  mutate(stats_arknights, Game = "Arknights"),
+  mutate(stats_wuwa, Game = "Wuwa")
 )
+```
 
-# Reshape success rates for plotting
-success_rates_long <- success_rates %>%
-    tidyr::pivot_longer(cols=c(Limited, Weapons, Characters),
-                       names_to="Type",
-                       values_to="Rate")
+```{r success_rates}
+# Calculate success rates for all games
+success_rates <- calculate_success_rates(data_list)
+
+# Prepare data for plotting success rates
+success_rates_honkai <- success_rates$honkai %>%
+  pivot_longer(cols = c(Limited_Rate, Weapon_Rate, Four_Star_Rate, Three_Star_Rate),
+               names_to = "Type", values_to = "Rate")
+
+success_rates_arknights <- success_rates$arknights %>%
+  pivot_longer(cols = c(Six_Star_Rate, Five_Star_Rate, Four_Star_Rate, Three_Star_Rate),
+               names_to = "Type", values_to = "Rate")
+
+success_rates_wuwa <- success_rates$wuwa %>%
+  pivot_longer(cols = c(Five_Star_Rate, Four_Star_Rate, Limited_Four_Rate, Three_Star_Rate),
+               names_to = "Type", values_to = "Rate")
+
+# Combine for overall comparison
+success_rates_long <- bind_rows(
+  success_rates_honkai,
+  success_rates_arknights,
+  success_rates_wuwa
+)
+```
+
+```{r cumulative_probabilities}
+# Calculate cumulative probabilities for all games
+cum_data <- prepare_cumulative_data(data_list)
 ```
 
 ## Pull Distribution Comparison
 
-```{r pull_distributions}
-# Side-by-side density plots
-ggplot(all_results, aes(x=Pulls, fill=Game)) +
-    geom_density(alpha=0.5) +
-    scale_fill_manual(values=game_colors) +
-    theme_minimal() +
-    labs(title="Pull Distribution Comparison Across Games",
-         x="Number of Pulls",
-         y="Density")
+This section compares the distribution of pulls required to get the desired items across different games.
 
-# Box plots with violin plots
-ggplot(all_results, aes(x=Game, y=Pulls, fill=Game)) +
-    geom_violin(alpha=0.5) +
-    geom_boxplot(width=0.2, alpha=0.8) +
-    scale_fill_manual(values=game_colors) +
-    theme_minimal() +
-    labs(title="Pull Distribution by Game",
-         y="Number of Pulls")
+```{r pull_distributions}
+# Plot pull density distributions
+plot_pull_density(all_results)
+
+# Plot pull boxplots
+plot_pull_boxplots(all_results)
 ```
 
 ## Success Rates Visualization
 
-```{r success_rates_viz}
-# Bar plot of success rates
-ggplot(success_rates_long, aes(x=Game, y=Rate, fill=Type)) +
-    geom_bar(stat="identity", position="dodge") +
-    scale_fill_brewer(palette="Set2") +
-    theme_minimal() +
-    labs(title="Success Rates by Game and Type",
-         y="Rate") +
-    coord_flip()
+The following charts show the success rates for different rarities across the games.
+
+```{r success_rates_plot}
+# Plot success rates
+plot_success_rates(success_rates_long)
 ```
 
 ## Cumulative Probability Analysis
 
+This analysis shows the probability of obtaining the desired item within a certain number of pulls.
+
 ```{r cumulative_analysis}
-# Function to calculate cumulative probabilities
-calc_cumulative <- function(data) {
-    data %>%
-        group_by(Pulls) %>%
-        summarise(count = n()) %>%
-        arrange(Pulls) %>%
-        mutate(
-            probability = count/sum(count),
-            cumulative = cumsum(count)/sum(count)
-        )
-}
-
-# Calculate cumulative probabilities for each game
-cum_hsr <- calc_cumulative(results_hsr)
-cum_genshin <- calc_cumulative(results_genshin)
-cum_zzz <- calc_cumulative(results_zzz)
-
-# Combine cumulative data
-cum_hsr$Game <- "HSR"
-cum_genshin$Game <- "Genshin"
-cum_zzz$Game <- "ZZZ"
-cum_all <- rbind(cum_hsr, cum_genshin, cum_zzz)
-
 # Plot cumulative probabilities
-ggplot(cum_all, aes(x=Pulls, y=cumulative, color=Game)) +
-    geom_line(linewidth=1) +  # Changed from size to linewidth
-    scale_color_manual(values=game_colors) +
-    theme_minimal() +
-    labs(title="Cumulative Probability of Success",
-         x="Number of Pulls",
-         y="Cumulative Probability") +
-    geom_hline(yintercept=0.5, linetype="dashed", color="gray") +
-    geom_hline(yintercept=0.95, linetype="dashed", color="gray")
+plot_cumulative_probabilities(cum_data)
 ```
 
-## Character vs Weapon Analysis
+## Character vs Weapon Banner Analysis
 
-```{r char_weapon_analysis}
-# Create heatmap of Characters vs Weapons frequencies for each game
-all_results %>%
-  group_by(Game, Characters, Weapons) %>%
-  summarise(Count = n(), .groups = 'drop') %>%
-  ggplot(aes(x = Characters, y = Weapons, fill = Count)) +
-    geom_tile() +
-    facet_wrap(~Game) +
-    scale_fill_viridis_c() +
-    theme_minimal() +
-    labs(title = "Character vs Weapon Distribution by Game",
-         x = "Number of Characters",
-         y = "Number of Weapons",
-         fill = "Frequency")
-```
+For Honkai games (HSR, Genshin Impact, ZZZ), we can compare the character and weapon banners.
 
-## Comparative Analysis
+```{r banner_comparison}
+# Prepare data for banner comparison
+honkai_games <- bind_rows(
+  data_list$hsr,
+  data_list$genshin,
+  data_list$zzz
+)
 
-```{r comparative_plots}
-# Combine data for comparison
-results_hsr$Game <- "HSR"
-results_genshin$Game <- "Genshin"
-results_zzz$Game <- "ZZZ"
-all_results <- rbind(results_hsr, results_genshin, results_zzz)
-
-# Create comparative boxplot
-ggplot(all_results, aes(x=Game, y=Pulls, fill=Game)) +
-    geom_boxplot() +
-    theme_minimal() +
-    labs(title="Pulls Distribution Comparison",
-         y="Number of Pulls",
-         x="Game") +
-    scale_fill_brewer(palette="Set2")
+# Plot banner comparison
+plot_banner_comparison(honkai_games)
 ```
 
 ## Game-Specific Statistics
 
 ### Honkai: Star Rail
-```{r hsr_stats}
-kable(data.frame(
-    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
-               "Standard Deviation", "Min Pulls", "Max Pulls",
-               "Limited Rate", "Weapon Rate", "Character Rate"),
-    Value = c(stats_hsr$total_sims, stats_hsr$pulls_mean, stats_hsr$pulls_median, 
-              stats_hsr$pulls_sd, stats_hsr$pulls_min, stats_hsr$pulls_max,
-              stats_hsr$limited_ratio, stats_hsr$weapons_ratio, stats_hsr$chars_ratio)
-), digits=2)
 
-ggplot(results_hsr, aes(x=Pulls)) +
-    geom_histogram(binwidth=1, fill="skyblue", color="black") +
-    theme_minimal() +
-    labs(title="HSR Pull Distribution",
-         x="Number of Pulls",
-         y="Frequency")
+```{r hsr_stats}
+# Plot HSR histogram
+plot_game_histogram(data_list$hsr, "HSR", game_colors["HSR"])
+
+# Calculate and display detailed HSR statistics
+hsr_detailed <- calculate_detailed_stats(data_list$hsr)
+
+kable(head(hsr_detailed, 10),
+      digits = 4,
+      caption = "HSR Pull Statistics (First 10 rows)",
+      format = "html") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 ### Genshin Impact
-```{r genshin_stats}
-kable(data.frame(
-    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
-               "Standard Deviation", "Min Pulls", "Max Pulls",
-               "Limited Rate", "Weapon Rate", "Character Rate"),
-    Value = c(stats_genshin$total_sims, stats_genshin$pulls_mean, stats_genshin$pulls_median, 
-              stats_genshin$pulls_sd, stats_genshin$pulls_min, stats_genshin$pulls_max,
-              stats_genshin$limited_ratio, stats_genshin$weapons_ratio, stats_genshin$chars_ratio)
-), digits=2)
 
-ggplot(results_genshin, aes(x=Pulls)) +
-    geom_histogram(binwidth=1, fill="lightgreen", color="black") +
-    theme_minimal() +
-    labs(title="Genshin Pull Distribution",
-         x="Number of Pulls",
-         y="Frequency")
+```{r genshin_stats}
+# Plot Genshin histogram
+plot_game_histogram(data_list$genshin, "Genshin Impact", game_colors["Genshin"])
+
+# Calculate and display detailed Genshin statistics
+genshin_detailed <- calculate_detailed_stats(data_list$genshin)
+
+kable(head(genshin_detailed, 10),
+      digits = 4,
+      caption = "Genshin Pull Statistics (First 10 rows)",
+      format = "html") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 ### ZZZ
+
 ```{r zzz_stats}
-kable(data.frame(
-    Metric = c("Total Simulations", "Average Pulls", "Median Pulls", 
-               "Standard Deviation", "Min Pulls", "Max Pulls",
-               "Limited Rate", "Weapon Rate", "Character Rate"),
-    Value = c(stats_zzz$total_sims, stats_zzz$pulls_mean, stats_zzz$pulls_median, 
-              stats_zzz$pulls_sd, stats_zzz$pulls_min, stats_zzz$pulls_max,
-              stats_zzz$limited_ratio, stats_zzz$weapons_ratio, stats_zzz$chars_ratio)
-), digits=2)
+# Plot ZZZ histogram
+plot_game_histogram(data_list$zzz, "ZZZ", game_colors["ZZZ"])
 
-ggplot(results_zzz, aes(x=Pulls)) +
-    geom_histogram(binwidth=1, fill="lightcoral", color="black") +
-    theme_minimal() +
-    labs(title="ZZZ Pull Distribution",
-         x="Number of Pulls",
-         y="Frequency")
-```
+# Calculate and display detailed ZZZ statistics
+zzz_detailed <- calculate_detailed_stats(data_list$zzz)
 
-## Success Rates Comparison
-```{r success_rates}
-success_rates <- data.frame(
-    Game = c("HSR", "Genshin", "ZZZ"),
-    Limited = c(stats_hsr$limited_ratio, stats_genshin$limited_ratio, stats_zzz$limited_ratio),
-    Weapons = c(stats_hsr$weapons_ratio, stats_genshin$weapons_ratio, stats_zzz$weapons_ratio),
-    Characters = c(stats_hsr$chars_ratio, stats_genshin$chars_ratio, stats_zzz$chars_ratio)
-)
-
-kable(success_rates, digits=3, 
-      caption="Average Success Rates per Game")
-```
-
-## Detailed Pull Statistics
-
-### Honkai: Star Rail Detailed Statistics
-```{r hsr_detailed_stats}
-detailed_stats_hsr <- results_hsr %>%
-    group_by(Pulls) %>%
-    summarise(
-        Count = n(),
-        Probability = Count/nrow(results_hsr),
-        Cumulative_Prob = cumsum(Count)/nrow(results_hsr),
-        Limited_Rate = mean(Limited),
-        Weapon_Rate = mean(Weapons),
-        Character_Rate = mean(Characters)
-    )
-
-kable(detailed_stats_hsr, 
+kable(head(zzz_detailed, 10),
       digits = 4,
-      caption = "HSR Pull Statistics",
-      format = "latex") %>%
-    kable_styling(
-        latex_options = c("striped", "scale_down"),
-        font_size = 8
-    )
+      caption = "ZZZ Pull Statistics (First 10 rows)",
+      format = "html") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-### Genshin Impact Detailed Statistics
-```{r genshin_detailed_stats}
-detailed_stats_genshin <- results_genshin %>%
-    group_by(Pulls) %>%
-    summarise(
-        Count = n(),
-        Probability = Count/nrow(results_genshin),
-        Cumulative_Prob = cumsum(Count)/nrow(results_genshin),
-        Limited_Rate = mean(Limited),
-        Weapon_Rate = mean(Weapons),
-        Character_Rate = mean(Characters)
-    )
+### Arknights
 
-kable(detailed_stats_genshin, 
+```{r arknights_stats}
+# Plot Arknights histogram
+plot_game_histogram(data_list$arknights, "Arknights", game_colors["Arknights"])
+
+# Calculate and display detailed Arknights statistics
+arknights_detailed <- calculate_detailed_stats(data_list$arknights)
+
+kable(head(arknights_detailed, 10),
       digits = 4,
-      caption = "Genshin Impact Pull Statistics",
-      format = "latex") %>%
-    kable_styling(
-        latex_options = c("striped", "scale_down"),
-        font_size = 8
-    )
+      caption = "Arknights Pull Statistics (First 10 rows)",
+      format = "html") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-### ZZZ Detailed Statistics
-```{r zzz_detailed_stats}
-detailed_stats_zzz <- results_zzz %>%
-    group_by(Pulls) %>%
-    summarise(
-        Count = n(),
-        Probability = Count/nrow(results_zzz),
-        Cumulative_Prob = cumsum(Count)/nrow(results_zzz),
-        Limited_Rate = mean(Limited),
-        Weapon_Rate = mean(Weapons),
-        Character_Rate = mean(Characters)
-    )
+### Wuwa
 
-kable(detailed_stats_zzz, 
+```{r wuwa_stats}
+# Plot Wuwa histogram
+plot_game_histogram(data_list$wuwa, "Wuwa", game_colors["Wuwa"])
+
+# Calculate and display detailed Wuwa statistics
+wuwa_detailed <- calculate_detailed_stats(data_list$wuwa)
+
+kable(head(wuwa_detailed, 10),
       digits = 4,
-      caption = "ZZZ Pull Statistics",
-      format = "latex") %>%
-    kable_styling(
-        latex_options = c("striped", "scale_down"),
-        font_size = 8
-    )
+      caption = "Wuwa Pull Statistics (First 10 rows)",
+      format = "html") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
+## Summary and Conclusions
+
+This analysis provides insights into the gatcha mechanics of five different games:
+
+1. **Honkai: Star Rail** - Characterized by [describe key findings]
+2. **Genshin Impact** - Shows [describe key findings]
+3. **ZZZ** - Demonstrates [describe key findings]
+4. **Arknights** - Features [describe key findings]
+5. **Wuwa** - Distinguished by [describe key findings]
+
+Overall, we can see that [general conclusions about the differences between the games' gatcha systems].
