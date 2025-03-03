@@ -103,7 +103,7 @@ fn simulate_hoyo_games(num_simulations: u64) -> io::Result<()> {
     Ok(())
 }
 
-fn simulate_other_games(num_simulations: usize) -> io::Result<()> {
+fn simulate_other_games(num_simulations: u64) -> io::Result<()> {
     let num_threads = num_cpus::get();
     let num_simulations_per_thread = num_simulations / num_threads;
     let multi_progress = MultiProgress::new();
