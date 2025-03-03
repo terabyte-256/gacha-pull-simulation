@@ -1,17 +1,19 @@
 mod Wuwa;
 mod Arknights;
-mod Honkai;
+mod Hoyo;
 
-use crate::Honkai::honkai::{h_simulate_game, GameData};
+use crate::Hoyo::hoyo::{h_simulate_game, GameData};
 use crate::Arknights::arknights::a_simulate_game;
 use crate::Wuwa::wuwa::w_simulate_game;
 use std::fs::{self, File};
 use std::io::{self, Write};
+use std::path::Path;
 use rayon::prelude::*;
 use clap::{App, Arg};
+use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 
 /// Writes simulation results to a CSV file.
-fn write_to_csv(filepath: &str, header: &str, data: Vec<Vec<i32>>) -> io::Result<()> {
+fn write_to_csv(filepath: &str, header: &str, data: Vec<(i32, i32, i32, i32, i32)>) -> io::Result<()> {
     // Ensure directory exists
     let path = Path::new(filepath);
     if let Some(parent) = path.parent() {
@@ -23,61 +25,143 @@ fn write_to_csv(filepath: &str, header: &str, data: Vec<Vec<i32>>) -> io::Result
 
     // Write header
     writer.write_all(header.as_bytes())?;
+    writer.write_all(b"\n")?;
 
     // Write data rows
-    for row in data {
-        let row_str = row
-            .iter()
-            .map(|value| value.to_string())
-            .collect::<Vec<_>>()
-            .join(",");
-        writer.write_all(format!("{}\n", row_str).as_bytes())?;
+    for (p1, p2, p3, p4, p5) in data {
+        writer.write_all(format!("{},{},{},{},{}\n", p1, p2, p3, p4, p5).as_bytes())?;
     }
 
     Ok(())
 }
 
-fn simulate_hoyo_games(num_simulations: usize) {
-let games = [
+fn simulate_hoyo_games(num_simulations: usize) -> io::Result<()> {
+    let num_threads = num_cpus::get();
+    let num_simulations_per_thread = num_simulations / num_threads;
+
+    let games = [
         ("hsr", GameData::new(0.008, 0.5, 0.75)),
         ("genshin", GameData::new(0.007, 0.55, 0.75)),
         ("zzz", GameData::new(0.01, 0.5, 0.75)),
     ];
 
+    let multi_progress = MultiProgress::new();
+
     for (game_name, game_data) in games.iter() {
+        // Create directory
+        fs::create_dir_all(format!("data/{}", game_name))?;
+
         // Character banner simulation
-        let char_results: Vec<(i32, i32, i32, i32, i32)>  = (0..num_threads)
-            .map(|_| simulate_game(game_data, num_simulations_per_thread, true))
-            .flatten()
+        let pb_char = multi_progress.add(ProgressBar::new(num_simulations as u64));
+        pb_char.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} ({eta})")
+            .unwrap());
+        pb_char.set_message(format!("{} character pulls", game_name));
+
+        let char_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
+            .into_par_iter()
+            .flat_map(|_| {
+                let results = h_simulate_game(game_data, num_simulations_per_thread as i32, true);
+                pb_char.inc(num_simulations_per_thread as u64);
+                results
+            })
             .collect();
-        write_to_csv(&format!("data/{}/character.csv", game_name), char_results);
+
+        pb_char.finish_with_message(format!("{} character pulls completed", game_name));
+
+        write_to_csv(
+            &format!("data/{}/character.csv", game_name),
+            "Pulls,Limited,Weapon,FourStar,ThreeStar",
+            char_results
+        )?;
 
         // Weapon banner simulation
-        let weapon_results: Vec<(i32, i32, i32, i32, i32)>  = (0..num_threads)
-            .map(|_| simulate_game(game_data, num_simulations_per_thread, false))
-            .flatten()
+        let pb_weapon = multi_progress.add(ProgressBar::new(num_simulations as u64));
+        pb_weapon.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} ({eta})")
+            .unwrap());
+        pb_weapon.set_message(format!("{} weapon pulls", game_name));
+
+        let weapon_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
+            .into_par_iter()
+            .flat_map(|_| {
+                let results = h_simulate_game(game_data, num_simulations_per_thread as i32, false);
+                pb_weapon.inc(num_simulations_per_thread as u64);
+                results
+            })
             .collect();
-        write_to_csv(&format!("data/{}/weapon.csv", game_name), weapon_results);
+
+        pb_weapon.finish_with_message(format!("{} weapon pulls completed", game_name));
+
+        write_to_csv(
+            &format!("data/{}/weapon.csv", game_name),
+            "Pulls,Limited,Weapon,FourStar,ThreeStar",
+            weapon_results
+        )?;
+    }
+
+    Ok(())
 }
 
-fn simulate_other_games(num_simulations: usize) {
-    let wuwa_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
-        .map(|_| Wuwa::simulate_game(num_simulations_per_thread, true))
-        .flatten()
-        .collect();
-
-    let arknights_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
-        .map(|_| Arknights::pull(num_simulations_per_thread))
-        .flatten()
-        .collect();
+fn simulate_other_games(num_simulations: usize) -> io::Result<()> {
+    let num_threads = num_cpus::get();
+    let num_simulations_per_thread = num_simulations / num_threads;
+    let multi_progress = MultiProgress::new();
 
     // Ensure directories exist
-    fs::create_dir_all("data/wuwa").unwrap();
-    fs::create_dir_all("data/arknights").unwrap();
+    fs::create_dir_all("data/wuwa")?;
+    fs::create_dir_all("data/arknights")?;
 
-    //Write data to CSV files
-    write_to_csv(&format!("data/wuwa/wuwa.csv"), wuwa_results);
-    write_to_csv(&format!("data/arknights/arknights.csv"), arknights_results);
+    // Wuwa simulation with progress bar
+    let pb_wuwa = multi_progress.add(ProgressBar::new(num_simulations as u64));
+    pb_wuwa.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} ({eta})")
+        .unwrap());
+    pb_wuwa.set_message("Wuwa pulls");
+
+    let wuwa_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
+        .into_par_iter()
+        .flat_map(|_| {
+            let results = w_simulate_game(num_simulations_per_thread as i32);
+            pb_wuwa.inc(num_simulations_per_thread as u64);
+            results
+        })
+        .collect();
+
+    pb_wuwa.finish_with_message("Wuwa pulls completed");
+
+    // Arknights simulation with progress bar
+    let pb_arknights = multi_progress.add(ProgressBar::new(num_simulations as u64));
+    pb_arknights.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg} ({eta})")
+        .unwrap());
+    pb_arknights.set_message("Arknights pulls");
+
+    let arknights_results: Vec<(i32, i32, i32, i32, i32)> = (0..num_threads)
+        .into_par_iter()
+        .flat_map(|_| {
+            let results = a_simulate_game(num_simulations_per_thread as i32);
+            pb_arknights.inc(num_simulations_per_thread as u64);
+            results
+        })
+        .collect();
+
+    pb_arknights.finish_with_message("Arknights pulls completed");
+
+    // Write data to CSV files
+    write_to_csv(
+        "data/wuwa/wuwa.csv",
+        "Pulls,FiveStar,FourStar,LimitedFourStar,ThreeStar",
+        wuwa_results
+    )?;
+
+    write_to_csv(
+        "data/arknights/arknights.csv",
+        "Pulls,SixStar,FiveStar,FourStar,ThreeStar",
+        arknights_results
+    )?;
+
+    Ok(())
 }
 
 fn main() -> io::Result<()> {
@@ -93,11 +177,15 @@ fn main() -> io::Result<()> {
         .parse()
         .unwrap_or(1000000);
 
+    println!("Starting simulations with {} total pulls for each game type", num_simulations);
+
     // Simulate Honkai games
-    simulate_honkai_games(num_simulations);
+    simulate_hoyo_games(num_simulations)?;
 
     // Simulate Wuwa and arknights games
-    simulate_other_games(num_simulations);
+    simulate_other_games(num_simulations)?;
+
+    println!("All simulations completed successfully!");
 
     Ok(())
 }
