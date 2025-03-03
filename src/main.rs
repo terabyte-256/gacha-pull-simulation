@@ -9,7 +9,7 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::Path;
 use rayon::prelude::*;
-use clap::{App, Arg};
+use clap::{Command, Arg, ArgAction};
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 
 /// Writes simulation results to a CSV file.
@@ -165,17 +165,18 @@ fn simulate_other_games(num_simulations: usize) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let matches = App::new("Gacha Simulator")
-        .arg(Arg::with_name("simulations")
-                .short("n")
-                .default_value("1000000")
-                .help("Number of simulations to run"))
-        .get_matches();
+    let matches = Command::new("Gacha Simulator")
+            .arg(
+                Arg::new("simulations")
+                    .short('n')
+                    .long("simulations")
+                    .help("Number of simulations to run")
+                    .default_value("1000000")
+                    .value_parser(clap::value_parser!(u64))
+            )
+            .get_matches();
 
-    let num_simulations = matches.value_of("simulations")
-        .unwrap()
-        .parse()
-        .unwrap_or(1000000);
+    let num_simulations = matches.get_one::<u64>("simulations").cloned().unwrap_or(1000000);
 
     println!("Starting simulations with {} total pulls for each game type", num_simulations);
 
