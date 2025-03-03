@@ -7,6 +7,10 @@ This project simulates and analyzes gacha pull statistics for various games incl
 ```
 gacha-pull-simulation/
 ├── analysis/
+│   ├──r/
+│   │   ├── load_data.R
+│   │   ├── plotting.R
+│   │   └── stat_utils.R
 │   ├── gacha_pull_simulation.pdf
 │   └── gacha_pull_simulation.rmd
 ├── src/
