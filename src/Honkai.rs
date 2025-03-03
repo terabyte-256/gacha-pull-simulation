@@ -1,4 +1,4 @@
-pub mod Honkai {
+pub mod honkai {
     use rand::Rng;
     use rand::thread_rng;
     use lazy_static::lazy_static;

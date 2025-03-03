@@ -2,9 +2,9 @@ mod Wuwa;
 mod Arknights;
 mod Honkai;
 
-use crate::Honkai::Honkai::{h_simulate_game, GameData};
-use crate::Arknights::Arknights::a_simulate_game;
-use crate::Wuwa::Wuwa::w_simulate_game;
+use crate::Honkai::honkai::{h_simulate_game, GameData};
+use crate::Arknights::arknights::a_simulate_game;
+use crate::Wuwa::wuwa::w_simulate_game;
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::Path;
@@ -42,16 +42,16 @@ fn write_to_csv(filepath: &str, header: &str, data: Vec<Vec<i32>>) -> io::Result
 /// Simulates Honkai games and writes results to CSV files.
 fn simulate_honkai_games(num_threads: usize, num_simulations_per_thread: usize) -> io::Result<()> {
     let games = vec![
-        ("hsr", GameData::new(0.008, 0.5, 0.75)),
-        ("genshin", GameData::new(0.007, 0.55, 0.75)),
-        ("zzz", GameData::new(0.01, 0.5, 0.75)),
+        ("hsr", Arc::new(GameData::new(0.008, 0.5, 0.75))),
+        ("genshin", Arc::new(GameData::new(0.007, 0.55, 0.75))),
+        ("zzz", Arc::new(GameData::new(0.01, 0.5, 0.75))),
     ];
 
     let games = Arc::new(games);
 
     for game in games.iter() {
         let game_name = game.0.to_string();
-        let game_data = Arc::new(game.1.clone());
+        let game_data = Arc::clone(&game.1);
 
         // Simulate character banner
         let char_results = simulate_in_threads(
@@ -98,7 +98,10 @@ fn simulate_in_threads(
         let game_data = Arc::clone(&game_data);
 
         let handle = thread::spawn(move || {
-            let results = h_simulate_game(&game_data, num_simulations_per_thread as i32, is_character_banner);
+            let results: Vec<Vec<i32>> = h_simulate_game(&game_data, num_simulations_per_thread as i32, is_character_banner)
+                .into_iter()
+                .map(|(a, b, c, d, e)| vec![a, b, c, d, e])
+                .collect();
             if let Err(e) = tx.send(results) {
                 eprintln!("Failed to send results: {}", e);
             }
@@ -122,7 +125,7 @@ fn simulate_in_threads(
     Ok(all_results)
 }
 
-/// Simulates Wuwa and Arknights games and writes results to CSV files.
+/// Simulates Wuwa and arknights games and writes results to CSV files.
 fn simulate_other_games(num_threads: usize, num_simulations_per_thread: usize) -> io::Result<()> {
     // Wuwa simulation
     let wuwa_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, |n| {
@@ -137,7 +140,7 @@ fn simulate_other_games(num_threads: usize, num_simulations_per_thread: usize) -
         wuwa_results,
     )?;
 
-    // Arknights simulation
+    // arknights simulation
     let arknights_results = simulate_game_with_threads(num_threads, num_simulations_per_thread, |n| {
         a_simulate_game(n)
             .into_iter()
@@ -204,7 +207,7 @@ fn main() -> io::Result<()> {
     // Simulate Honkai games
     simulate_honkai_games(num_threads, num_simulations_per_thread)?;
 
-    // Simulate Wuwa and Arknights games
+    // Simulate Wuwa and arknights games
     simulate_other_games(num_threads, num_simulations_per_thread)?;
 
     Ok(())

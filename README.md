@@ -1,6 +1,6 @@
 # Gacha Pull Simulation
 
-This project simulates and analyzes gacha pull statistics for various games including HoYoverse games (Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero), Arknights, and Wuthering Waves. It provides accurate probability modeling, visualization tools, and interactive components to help players understand the mechanics behind gacha systems.
+This project simulates and analyzes gacha pull statistics for various games including HoYoverse games (Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero), arknights, and Wuthering Waves. It provides accurate probability modeling, visualization tools, and interactive components to help players understand the mechanics behind gacha systems.
 
 ## Project Structure
 
@@ -149,7 +149,7 @@ gacha-pull-simulation/
   - Hard pity: 70 pulls
   - 75/25 system for featured drives
 
-### Arknights
+### arknights
 - **Standard Banner**
   - Base 6★ rate: 2.0%
   - Pity System: Rate increases by 2% after 50 pulls
@@ -189,7 +189,7 @@ const hsrProbability = calculateProbability({
   targetCount: 1
 });
 ```
-*Note: Arknights and Wuthering Waves calculators have not been implemented yet.*
+*Note: arknights and Wuthering Waves calculators have not been implemented yet.*
 ## Future Plans
 
 - Create a Discord bot for quick probability lookups

@@ -1,4 +1,4 @@
-pub mod Wuwa {
+pub mod wuwa {
     use rand::Rng;
     use rand::thread_rng;
     use lazy_static::lazy_static;

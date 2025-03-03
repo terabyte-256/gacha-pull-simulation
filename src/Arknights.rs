@@ -1,4 +1,4 @@
-pub mod Arknights {
+pub mod arknights {
     use rand::Rng;
     use rand::thread_rng;
     use lazy_static::lazy_static;
