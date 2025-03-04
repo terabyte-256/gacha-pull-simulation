@@ -1,10 +1,10 @@
-mod Wuwa;
-mod Arknights;
-mod Hoyo;
+mod wuwa;
+mod arknights;
+mod hoyo;
 
-use crate::Hoyo::hoyo::{h_simulate_game, GameData};
-use crate::Arknights::arknights::a_simulate_game;
-use crate::Wuwa::wuwa::w_simulate_game;
+use crate::hoyo::hoyo::{h_simulate_game, GameData};
+use crate::arknights::arknights::a_simulate_game;
+use crate::wuwa::wuwa::w_simulate_game;
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::Path;
