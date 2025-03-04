@@ -91,12 +91,13 @@ pub mod hoyo {
                         if !pull_for_character { // pull until 1 weapon
                             break
                         }
-                    } else if random_value <= curr_four_star_chance {
-                        four_char_success += 1;
-                    } else {
-                        three_char_success += 1;
                     }
-                    curr_char_pity += 1;
+                if random_value <= curr_four_star_chance {
+                    four_char_success += 1;
+                } else {
+                    three_char_success += 1;
+                }
+                curr_char_pity += 1;
                 }
             }
 
