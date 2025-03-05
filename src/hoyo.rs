@@ -62,7 +62,7 @@ pub mod hoyo {
             'pull_loop: loop {
                 pulls += 1;
                 let mut rng = thread_rng();
-                let random_value: f64 = thread_rng().gen::<f64>();
+                let random_value: f64 = rng.gen();
                 let mut item_obtained = false;
 
                 // Check for 5-star item first (character or weapon)
@@ -73,7 +73,7 @@ pub mod hoyo {
 
                     if random_value <= curr_five_star_chance_with_pity || curr_char_pity + 1 == curr_character_pity {
                         // 5-star obtained, determine if it's limited
-                        if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
+                        if curr_character_guaranteed || rng.gen::<f64>() <= curr_limited_character_chance {
                             five_char_successes += 1;
                             limited_successes += 1;
                             curr_character_guaranteed = false;
@@ -99,7 +99,7 @@ pub mod hoyo {
 
                     if random_value <= curr_five_star_chance_with_pity || curr_weapon_pity + 1 == curr_weapon_pity_value {
                         // 5-star weapon obtained, determine if it's limited
-                        if curr_weapon_guaranteed || thread_rng().gen::<f64>() <= curr_limited_weapon_chance {
+                        if curr_weapon_guaranteed || rng.gen::<f64>() <= curr_limited_weapon_chance {
                             weapon_successes += 1;
                             curr_weapon_guaranteed = false;
                             item_obtained = true;
