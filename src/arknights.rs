@@ -18,51 +18,60 @@ pub mod arknights {
         for _ in 0..num_simulations {
             let mut pull_count = 0;
             let mut current_pity = 0;
-            let mut pulls: Vec<i32> = Vec::with_capacity(4);
-            pulls.push(0); // 6-star
-            pulls.push(0); // 5-star
-            pulls.push(0); // 4-star
-            pulls.push(0); // 3-star
+            let mut pulls = [0, 0, 0, 0]; // [6-star, 5-star, 4-star, 3-star]
+            let mut six_star_obtained = false;
 
-            let mut current_rates: Vec<f64> = Vec::with_capacity(4);
-            current_rates.push(*SIX_STAR_RATE);
-            current_rates.push(*FIVE_STAR_RATE);
-            current_rates.push(*FOUR_STAR_RATE);
-            current_rates.push(*THREE_STAR_RATE);
+            let mut current_rates = [*SIX_STAR_RATE, *FIVE_STAR_RATE, *FOUR_STAR_RATE, *THREE_STAR_RATE];
 
-            for _ in 0..10 {
+            // Pull until we get at least one 6-star
+            while !six_star_obtained {
                 current_pity += 1;
                 pull_count += 1;
 
+                // Apply soft pity mechanism
                 if current_pity > *SOFT_PITY {
-                    let mut new_rates: Vec<f64> = Vec::with_capacity(4);
-                    new_rates.push(current_rates[0] + *INCREMENT);
-                    new_rates.push(current_rates[1] - *INCREMENT * *FIVE_STAR_RATE);
-                    new_rates.push(current_rates[2] - *INCREMENT * *FOUR_STAR_RATE);
-                    new_rates.push(current_rates[3] - *THREE_STAR_RATE * *INCREMENT);
-                    current_rates = new_rates;
+                    // Calculate new 6-star rate
+                    let new_six_star_rate = current_rates[0] + *INCREMENT;
+
+                    // Calculate how much to reduce from other rates proportionally
+                    let reduction = new_six_star_rate - current_rates[0];
+                    let total_other_rates = current_rates[1] + current_rates[2] + current_rates[3];
+
+                    // Apply proportional reductions to maintain sum = 1.0
+                    current_rates[0] = new_six_star_rate;
+                    current_rates[1] -= reduction * (current_rates[1] / total_other_rates);
+                    current_rates[2] -= reduction * (current_rates[2] / total_other_rates);
+                    current_rates[3] -= reduction * (current_rates[3] / total_other_rates);
                 }
 
+                // Generate random roll
                 let roll: f64 = thread_rng().gen::<f64>();
 
+                // Determine result based on cumulative probability
                 if roll < current_rates[0] {
+                    // 6-star
                     current_pity = 0;
-                    let mut reset_rates: Vec<f64> = Vec::with_capacity(4);
-                    reset_rates.push(*SIX_STAR_RATE);
-                    reset_rates.push(*FIVE_STAR_RATE);
-                    reset_rates.push(*FOUR_STAR_RATE);
-                    reset_rates.push(*THREE_STAR_RATE);
-                    current_rates = reset_rates;
                     pulls[0] += 1;
+                    six_star_obtained = true; // We got a 6-star, so we can stop pulling
+
+                    // Reset rates to initial values
+                    current_rates[0] = *SIX_STAR_RATE;
+                    current_rates[1] = *FIVE_STAR_RATE;
+                    current_rates[2] = *FOUR_STAR_RATE;
+                    current_rates[3] = *THREE_STAR_RATE;
                 } else if roll < current_rates[0] + current_rates[1] {
+                    // 5-star
                     pulls[1] += 1;
                 } else if roll < current_rates[0] + current_rates[1] + current_rates[2] {
+                    // 4-star
                     pulls[2] += 1;
                 } else {
+                    // 3-star
                     pulls[3] += 1;
                 }
             }
 
+            // Add results for this simulation (how many pulls it took to get a 6-star)
             results.push((pull_count, pulls[0], pulls[1], pulls[2], pulls[3]));
         }
 

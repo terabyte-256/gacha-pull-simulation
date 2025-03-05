@@ -1,213 +1,167 @@
 # Gacha Pull Simulation
 
-This project simulates and analyzes gacha pull statistics for various games including HoYoverse games (Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero), arknights, and Wuthering Waves. It provides accurate probability modeling, visualization tools, and interactive components to help players understand the mechanics behind gacha systems.
+A comprehensive toolkit for simulating and analyzing gacha pull statistics across popular mobile games. This project provides a high-performance Rust-based simulation engine, robust statistical analysis tools using R, and an interactive web calculator.
 
-## Project Structure
+![Gacha Pull Simulation Banner](https://i.imgur.com/tXGsVXz.png)
 
-```
-gacha-pull-simulation/
-├── analysis/
-│   ├──r/
-│   │   ├── load_data.R
-│   │   ├── plotting.R
-│   │   └── stat_utils.R
-│   ├── gacha_pull_simulation.pdf
-│   └── gacha_pull_simulation.rmd
-├── src/
-│   ├── main.rs
-│   ├── honkai.rs
-│   ├── arknights.rs
-│   └── wuthering_waves.rs
-├── web/
-│   ├── index.html
-│   └── js/
-│       └── gacha-calculator.js
-├── data/
-│   ├── hsr/
-│   │   ├── character.csv
-│   │   └── weapon.csv
-│   ├── genshin/
-│   │   ├── character.csv
-│   │   └── weapon.csv
-│   ├── zzz/
-│   │   ├── character.csv
-│   │   └── weapon.csv
-│   ├── arknights/
-│   │   └── data.csv
-│   └── wuwa/
-│       └── data.csv
-```
+## Features
 
-## Prerequisites
+### Simulation Engine (Rust)
+- Multi-threaded simulation capable of running millions of trials for statistical accuracy
+- Memory-efficient chunk processing for handling large datasets
+- Precise implementation of complex pity systems and banner mechanics
 
-- Rust (latest stable version)
-- R with the following packages:
-  - ggplot2
-  - knitr
-  - dplyr
-  - kableExtra
-  - hexbin
-  - tidyverse
-- A modern web browser
-- Node.js (optional, for development)
+### Data Analysis (R)
+- Detailed pull distribution visualizations
+- Banner comparison analytics
+- Cumulative probability calculations
+- Success rate comparisons across different games
 
-## Installation
+### Web Calculator
+- Interactive probability calculations for HoYoverse games
+- Configurable parameters (pity count, guarantee status, banner type)
+- Real-time results without server dependencies
 
-1. Clone this repository:
+## Supported Games
+
+- **HoYoverse Games**
+  - Genshin Impact
+  - Honkai: Star Rail (HSR)
+  - Zenless Zone Zero (ZZZ)
+- **Other Gacha Games**
+  - Arknights
+  - Wuthering Waves
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [R](https://cran.r-project.org/) with the following packages:
+  - ggplot2, dplyr, knitr, kableExtra, tidyr
+- Modern web browser for the calculator
+
+### Installation
+
+1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/gacha-pull-simulation.git
+   git clone https://github.com/terabyte-256/gacha-pull-simulation.git
    cd gacha-pull-simulation
    ```
 
-2. Install Rust dependencies:
+2. Build the Rust simulation engine:
    ```bash
    cargo build --release
    ```
 
 3. Install R dependencies:
    ```r
-   install.packages(c("ggplot2", "knitr", "dplyr", "kableExtra", "hexbin", "tidyverse"))
+   install.packages(c("ggplot2", "dplyr", "knitr", "kableExtra", "tidyr", "viridis"))
    ```
 
-## Running the Simulation
+## Usage
 
-1. Generate the simulation data:
-   ```bash
-   cargo run --release
-   ```
-   This will create CSV files in the `data` directory containing pull statistics for each game.
+### Running Simulations
 
-2. Generate the analysis report:
-   ```bash
-   Rscript -e 'rmarkdown::render("analysis/gacha_pull_simulation.rmd")'
-   ```
-   This will create both PDF and HTML versions of the analysis report.
+Run the Rust simulation to generate data files:
 
-3. For interactive calculations, open `index.html` in a web browser:
-   ```bash
-   open index.html  # macOS
-   # OR
-   xdg-open index.html  # Linux
-   # OR
-   start index.html  # Windows
-   ```
-
-## Features
-
-- **Simulation Engine (Rust)**
-  - Multi-threaded simulation with 10+ million trials for statistical accuracy
-  - Configurable game parameters to match current in-game rates
-  - Detailed logging of pull sequences and outcomes
-
-- **Comprehensive Analysis (R Markdown)**
-  - Pull distribution visualization with density plots
-  - Success rate comparisons across different banner types
-  - Cumulative probability analysis with confidence intervals
-  - Character vs weapon banner analysis
-  - Economic analysis (primogem/pull currency efficiency)
-
-- **Interactive Web Calculator**
-  - Real-time probability calculations
-  - Support for all three HoYoverse games
-  - Configurable parameters (pity count, guarantee status, etc.)
-  - Visual representations of probability distributions
-
-## Game Parameters
-
-### Honkai: Star Rail
-- **Standard Character Banner**
-  - Base 5★ rate: 0.6%
-  - Soft pity: Begins at 74 pulls
-  - Hard pity: 90 pulls
-  - 50/50 system for featured characters
-
-- **Light Cone Banner**
-  - Base 5★ rate: 0.8%
-  - Soft pity: Begins at 65 pulls
-  - Hard pity: 80 pulls
-  - 75/25 system for featured light cones
-
-### Genshin Impact
-- **Character Event Banner**
-  - Base 5★ rate: 0.6%
-  - Soft pity: Begins at 74 pulls
-  - Hard pity: 90 pulls
-  - 50/50 system for featured characters
-
-- **Weapon Banner**
-  - Base 5★ rate: 0.7%
-  - Soft pity: Begins at 63 pulls
-  - Hard pity: 77 pulls
-  - Epitomized Path system after 2 non-featured weapons
-
-### Zenless Zone Zero
-- **Agent Banner**
-  - Base 5★ rate: 1.0%
-  - Soft pity: Begins at 70 pulls
-  - Hard pity: 80 pulls
-  - 50/50 system for featured agents
-
-- **Drive Banner**
-  - Base 5★ rate: 1.0%
-  - Soft pity: Begins at 60 pulls
-  - Hard pity: 70 pulls
-  - 75/25 system for featured drives
-
-### arknights
-- **Standard Banner**
-  - Base 6★ rate: 2.0%
-  - Pity System: Rate increases by 2% after 50 pulls
-  - Rate increases: Starts at pull 51 where rate becomes 4%, then 6%, etc.
-  - Recruitment and Headhunting systems
-  - Tag-based recruitment system with rare tag combinations
-
-- **Limited Banner**
-  - Similar base rates with featured operators
-  - Spark system at 300 pulls
-  - Special banners (like Joint Operation) with modified pools
-
-### Wuthering Waves
-- **Character Banner**
-  - Base 5★ rate: 0.8%
-  - Hard pity: 80 pulls
-  - 50/50 system for featured characters with guaranteed on second 5★
-
-- **Four-Star System**
-  - 6% base rate for 4★ characters/weapons
-  - Guaranteed 4★ every 10 pulls
-  - 50/50 chance for featured 4★ with guaranteed system
-
-## Example Usage
-
-For API usage in JavaScript:
-
-```javascript
-import { calculateProbability } from './js/gacha-calculator.js';
-
-// For HoYoverse games
-const hsrProbability = calculateProbability({
-  game: 'hsr',
-  bannerType: 'character',
-  currentPity: 65,
-  hasGuarantee: false,
-  targetCount: 1
-});
+```bash
+cargo run --release -- -n 1000000 -c 10000
 ```
-*Note: arknights and Wuthering Waves calculators have not been implemented yet.*
-## Future Plans
 
-- Create a Discord bot for quick probability lookups
-- Develop a pull planning and resource management tool
+Options:
+- `-n, --simulations`: Number of simulations to run (default: 1000000)
+- `-c, --chunk-size`: Size of chunks for processing (default: 10000)
+
+The simulation will create data files in the `data/` directory for each game and banner type.
+
+### Analyzing Results
+
+Generate the analysis report:
+
+```bash
+cd analysis
+Rscript -e 'rmarkdown::render("gacha_pull_simulation.rmd")'
+```
+
+This will create a PDF report with detailed visualizations and statistics.
+
+### Using the Web Calculator
+
+Simply open `web/index.html` in a web browser to use the interactive calculator:
+
+```bash
+# macOS
+open web/index.html
+
+# Linux
+xdg-open web/index.html
+
+# Windows
+start web/index.html
+```
+
+## Game Mechanics
+
+### HoYoverse Games
+
+#### Genshin Impact
+- **Character Banner**: 0.6% base rate, soft pity at 74, hard pity at 90
+- **Weapon Banner**: 0.7% base rate, soft pity at 63, hard pity at 80
+- 50/50 system for characters, 75/25 for weapons
+
+#### Honkai: Star Rail
+- **Character Banner**: 0.6% base rate, soft pity at 74, hard pity at 90
+- **Light Cone Banner**: 0.8% base rate, soft pity at 64, hard pity at 80
+- Similar guarantee systems to Genshin
+
+#### Zenless Zone Zero
+- **Character Banner**: 1.0% base rate, similar pity system
+- **Weapon Banner**: Higher rates than other HoYoverse games
+
+### Other Games
+
+#### Arknights
+- 2% base rate for 6★ operators
+- Pity system that increases rates after 50 pulls
+- 10-pull simulation with detailed rarity tracking
+
+#### Wuthering Waves
+- 0.8% base rate for 5★ characters
+- 80-pull hard pity
+- 50/50 guarantee system
+
+## Project Structure
+
+```
+gacha-pull-simulation/
+├── src/                  # Rust simulation engine
+│   ├── main.rs           # Main application entry point
+│   ├── hoyo.rs           # HoYoverse game simulations
+│   ├── arknights.rs      # Arknights simulation
+│   └── wuwa.rs           # Wuthering Waves simulation
+├── analysis/             # R analysis tools
+│   ├── R/                # R utility scripts
+│   │   ├── load_data.R   # Data loading functions
+│   │   ├── plotting.R    # Visualization functions
+│   │   └── stats_utils.R # Statistical calculation functions
+│   └── gacha_pull_simulation.rmd  # R Markdown analysis report
+├── web/                  # Web calculator
+│   ├── index.html        # Calculator interface
+│   └── js/
+│       └── gacha-calculator.js  # Calculator implementation
+└── data/                 # Generated simulation data (created at runtime)
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Here's how you can contribute:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -am 'Add some feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
 
 ## License
 
@@ -215,6 +169,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Devs for creating these games
-- The gaming community for documenting gacha mechanics
+- HoYoverse, Hypergryph, Kuro Games, and other game developers for creating these games
+- The gacha gaming community for documenting pity systems and pull mechanics
 - All contributors to this project
