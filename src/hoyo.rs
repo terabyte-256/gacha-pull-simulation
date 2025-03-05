@@ -11,6 +11,7 @@ pub mod hoyo {
         static ref COMMON_WEAPON_SOFT_PITY: i32 = 64;
         static ref COMMON_WEAPON_PITY: i32 = 80;
         static ref COMMON_FOUR_STAR_CHARACTER_CHANCE: f64 = 0.051;
+        static ref COMMON_FOUR_STAR_PITY: i32 = 10;
     }
 
     pub struct GameData {
@@ -42,6 +43,7 @@ pub mod hoyo {
             let mut curr_char_pity = 0;
             let mut curr_weapon_guaranteed = false;
             let mut curr_character_guaranteed = false;
+            let mut curr_four_star_pity = 0;
 
             loop {
                 pulls += 1;
@@ -52,52 +54,62 @@ pub mod hoyo {
                 let curr_soft_pity_increment = *COMMON_SOFT_PITY_INCREMENT;
                 let curr_character_soft_pity = *COMMON_CHARACTER_SOFT_PITY;
                 let curr_character_pity = *COMMON_CHARACTER_PITY;
+                let four_star_pity = *COMMON_FOUR_STAR_PITY;
                 let curr_weapon_soft_pity = *COMMON_WEAPON_SOFT_PITY;
                 let curr_weapon_pity_value = *COMMON_WEAPON_PITY;
                 let curr_limited_weapon_chance = game_data.limited_weapon_chance;
                 let curr_limited_character_chance = game_data.limited_character_chance;
+                let mut char_obtained = false;
 
-                if limited_successes >= 0 && five_char_successes < 7 {
-                    let curr_five_star_chance_with_pity = curr_five_star_chance + curr_soft_pity_increment * std::cmp::max(curr_char_pity - curr_character_soft_pity, 0) as f64;
-
-                    if random_value <= curr_five_star_chance_with_pity || curr_char_pity + 1 == curr_character_pity {
-                        if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
-                            five_char_successes += 1;
-                            curr_character_guaranteed = false;
-                            curr_char_pity = 0;
-                            limited_successes += 1;
-                        } else {
-                            curr_char_pity = 0;
-                            curr_character_guaranteed = true;
-                        }
-                        if pull_for_character { // pull until 1 5 star
-                            break;
-                        }
-                    } else {
-                        curr_char_pity += 1;
-                    }
-                } else {
-                    let curr_five_star_chance_with_pity = curr_five_star_weapon_chance + curr_soft_pity_increment * std::cmp::max(curr_weapon_pity - curr_weapon_soft_pity, 0) as f64;
-
-                    if random_value <= curr_five_star_chance_with_pity || curr_weapon_pity + 1 == curr_weapon_pity_value {
-                        if curr_weapon_guaranteed || thread_rng().gen::<f64>() < curr_limited_weapon_chance {
-                            weapon_successes += 1;
-                            curr_weapon_guaranteed = false;
-                            curr_weapon_pity = 0;
-                        } else {
-                            curr_weapon_pity = 0;
-                            curr_weapon_guaranteed = true;
-                        }
-                        if !pull_for_character { // pull until 1 weapon
-                            break
-                        }
-                    }
-                if random_value <= curr_four_star_chance {
+                if random_value <= curr_four_star_chance || curr_four_star_pity == four_star_pity {
                     four_char_success += 1;
                 } else {
-                    three_char_success += 1;
+                    curr_four_star_pity += 1;
+
+                    if limited_successes >= 0 && five_char_successes < 7 {
+                        let curr_five_star_chance_with_pity = curr_five_star_chance + curr_soft_pity_increment * std::cmp::max(curr_char_pity - curr_character_soft_pity, 0) as f64;
+
+                        if random_value <= curr_five_star_chance_with_pity || curr_char_pity + 1 == curr_character_pity {
+                            if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
+                                five_char_successes += 1;
+                                curr_character_guaranteed = false;
+                                curr_char_pity = 0;
+                                limited_successes += 1;
+                                char_obtained = true;
+                                if pull_for_character { // pull until 1 5 star
+                                    break;
+                                }
+                            } else {
+                                curr_char_pity = 0;
+                                curr_character_guaranteed = true;
+                            }
+                        } else {
+                            curr_char_pity += 1;
+                        }
+                    } else {
+                        let curr_five_star_chance_with_pity = curr_five_star_weapon_chance + curr_soft_pity_increment * std::cmp::max(curr_weapon_pity - curr_weapon_soft_pity, 0) as f64;
+
+                        if random_value <= curr_five_star_chance_with_pity || curr_weapon_pity + 1 == curr_weapon_pity_value {
+                            if curr_weapon_guaranteed || thread_rng().gen::<f64>() < curr_limited_weapon_chance {
+                                weapon_successes += 1;
+                                curr_weapon_guaranteed = false;
+                                curr_weapon_pity = 0;
+                                char_obtained = true;
+                                if !pull_for_character { // pull until 1 weapon
+                                    break
+                                }
+                            } else {
+                                curr_weapon_pity = 0;
+                                curr_weapon_guaranteed = true;
+                            }
+                        } else {
+                            curr_weapon_pity += 1;
+                        }
+                    }
                 }
-                curr_char_pity += 1;
+
+                if !char_obtained {
+                    three_char_success += 1;
                 }
             }
 

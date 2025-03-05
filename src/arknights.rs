@@ -43,7 +43,7 @@ pub mod arknights {
                     current_rates = new_rates;
                 }
 
-                let roll: f64 = thread_rng().gen();
+                let roll: f64 = thread_rng().gen::<f64>();
 
                 if roll < current_rates[0] {
                     current_pity = 0;
