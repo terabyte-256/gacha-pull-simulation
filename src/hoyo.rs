@@ -61,74 +61,126 @@ pub mod hoyo {
 
             'pull_loop: loop {
                 pulls += 1;
-                let mut rng = thread_rng();
-                let random_value: f64 = thread_rng().gen();
+                let mut five_star_obtained = false;
                 let mut item_obtained = false;
 
-                // Check for 5-star item first (character or weapon)
-                let five_star_obtained = if pull_for_character || limited_successes < 7 {
-                    // Character banner or still pulling for characters
-                    let curr_five_star_chance_with_pity = curr_five_star_chance +
-                        curr_soft_pity_increment * std::cmp::max(curr_char_pity - curr_character_soft_pity, 0) as f64;
+                if pull_for_character || limited_successes < 7 {
+                    // Character banner logic
+                    curr_char_pity += 1;
 
-                    if random_value <= curr_five_star_chance_with_pity || curr_char_pity + 1 == curr_character_pity {
-                        // 5-star obtained, determine if it's limited
+                    // HARD PITY CHECK - Guaranteed 5-star at exactly 90 pulls
+                    if curr_char_pity == curr_character_pity {
+                        // We've reached hard pity - guaranteed 5-star
                         if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
                             five_char_successes += 1;
                             limited_successes += 1;
                             curr_character_guaranteed = false;
+                        } else {
+                            curr_character_guaranteed = true;
+                        }
+                        curr_char_pity = 0;
+                        five_star_obtained = true;
+                        item_obtained = true;
+
+                        if pull_for_character {
+                            break 'pull_loop; // Stop if we're targeting character and got it
+                        }
+                    }
+                    // SOFT PITY & REGULAR ROLL CHECK
+                    else {
+                        let mut chance = curr_five_star_chance;
+                        // Apply soft pity if applicable
+                        if curr_char_pity > curr_character_soft_pity {
+                            chance += curr_soft_pity_increment * (curr_char_pity - curr_character_soft_pity) as f64;
+                        }
+
+                        // Check if we get a 5-star based on the probability
+                        if thread_rng().gen::<f64>() <= chance {
+                            // Got a 5-star before hard pity
+                            if curr_character_guaranteed || thread_rng().gen::<f64>() <= curr_limited_character_chance {
+                                five_char_successes += 1;
+                                limited_successes += 1;
+                                curr_character_guaranteed = false;
+                            } else {
+                                curr_character_guaranteed = true;
+                            }
+                            curr_char_pity = 0;
+                            five_star_obtained = true;
                             item_obtained = true;
 
                             if pull_for_character {
                                 break 'pull_loop; // Stop if we're targeting character and got it
                             }
-                        } else {
-                            curr_character_guaranteed = true;
-                            item_obtained = true;
                         }
-                        curr_char_pity = 0;
-                        true
-                    } else {
-                        curr_char_pity += 1;
-                        false
                     }
                 } else {
-                    // Weapon banner or targeting weapon
-                    let curr_five_star_chance_with_pity = curr_five_star_weapon_chance +
-                        curr_soft_pity_increment * std::cmp::max(curr_weapon_pity - curr_weapon_soft_pity, 0) as f64;
+                    // Weapon banner logic
+                    curr_weapon_pity += 1;
 
-                    if random_value <= curr_five_star_chance_with_pity || curr_weapon_pity + 1 == curr_weapon_pity_value {
-                        // 5-star weapon obtained, determine if it's limited
+                    // HARD PITY CHECK - Guaranteed 5-star at exactly 80 pulls
+                    if curr_weapon_pity == curr_weapon_pity_value {
+                        // We've reached hard pity - guaranteed 5-star weapon
                         if curr_weapon_guaranteed || thread_rng().gen::<f64>() <= curr_limited_weapon_chance {
                             weapon_successes += 1;
                             curr_weapon_guaranteed = false;
+                        } else {
+                            curr_weapon_guaranteed = true;
+                        }
+                        curr_weapon_pity = 0;
+                        five_star_obtained = true;
+                        item_obtained = true;
+
+                        if !pull_for_character {
+                            break 'pull_loop; // Stop if we're targeting weapon and got it
+                        }
+                    }
+                    // SOFT PITY & REGULAR ROLL CHECK
+                    else {
+                        let mut chance = curr_five_star_weapon_chance;
+                        // Apply soft pity if applicable
+                        if curr_weapon_pity > curr_weapon_soft_pity {
+                            chance += curr_soft_pity_increment * (curr_weapon_pity - curr_weapon_soft_pity) as f64;
+                        }
+
+                        // Check if we get a 5-star based on the probability
+                        if thread_rng().gen::<f64>() <= chance {
+                            // Got a 5-star before hard pity
+                            if curr_weapon_guaranteed || thread_rng().gen::<f64>() <= curr_limited_weapon_chance {
+                                weapon_successes += 1;
+                                curr_weapon_guaranteed = false;
+                            } else {
+                                curr_weapon_guaranteed = true;
+                            }
+                            curr_weapon_pity = 0;
+                            five_star_obtained = true;
                             item_obtained = true;
 
                             if !pull_for_character {
                                 break 'pull_loop; // Stop if we're targeting weapon and got it
                             }
-                        } else {
-                            curr_weapon_guaranteed = true;
-                            item_obtained = true;
                         }
-                        curr_weapon_pity = 0;
-                        true
-                    } else {
-                        curr_weapon_pity += 1;
-                        false
                     }
-                };
+                }
 
-                // Only check for 4-star if we didn't get a 5-star
+                // Handle 4-star pity if we didn't get a 5-star
                 if !five_star_obtained {
-                    // Check for 4-star
-                    if random_value <= curr_four_star_chance || curr_four_star_pity + 1 >= four_star_pity {
+                    curr_four_star_pity += 1;
+
+                    // Check for guaranteed 4-star at pity
+                    if curr_four_star_pity == four_star_pity {
                         four_char_success += 1;
                         curr_four_star_pity = 0;
                         item_obtained = true;
-                    } else {
-                        curr_four_star_pity += 1;
                     }
+                    // Regular chance for 4-star
+                    else if thread_rng().gen::<f64>() <= curr_four_star_chance {
+                        four_char_success += 1;
+                        curr_four_star_pity = 0;
+                        item_obtained = true;
+                    }
+                } else {
+                    // Reset 4-star pity when 5-star is obtained
+                    curr_four_star_pity = 0;
                 }
 
                 // If neither 5-star nor 4-star, it's a 3-star
