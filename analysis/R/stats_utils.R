@@ -1,4 +1,3 @@
-
 # Function to calculate basic statistics for each game
 calculate_basic_stats <- function(data) {
   data.frame(
@@ -13,7 +12,7 @@ calculate_basic_stats <- function(data) {
 
 # Function to calculate success rates based on game type
 calculate_success_rates <- function(data_list) {
-  # Success rates for Honkai games
+  # Success rates for Hoyo games
   hsr_rates <- data_list$hsr %>%
     summarize(
       Game = "HSR",
@@ -22,7 +21,7 @@ calculate_success_rates <- function(data_list) {
       Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     )
-  
+
   genshin_rates <- data_list$genshin %>%
     summarize(
       Game = "Genshin",
@@ -31,7 +30,7 @@ calculate_success_rates <- function(data_list) {
       Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     )
-  
+
   zzz_rates <- data_list$zzz %>%
     summarize(
       Game = "ZZZ",
@@ -40,7 +39,7 @@ calculate_success_rates <- function(data_list) {
       Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     )
-  
+
   # Success rates for Arknights
   arknights_rates <- data_list$arknights %>%
     summarize(
@@ -50,7 +49,7 @@ calculate_success_rates <- function(data_list) {
       Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     )
-  
+
   # Success rates for Wuwa
   wuwa_rates <- data_list$wuwa %>%
     summarize(
@@ -60,10 +59,10 @@ calculate_success_rates <- function(data_list) {
       Limited_Four_Rate = mean(Limited_Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     )
-  
+
   # Return as a list
   list(
-    honkai = bind_rows(hsr_rates, genshin_rates, zzz_rates),
+    hoyo = bind_rows(hsr_rates, genshin_rates, zzz_rates),
     arknights = arknights_rates,
     wuwa = wuwa_rates
   )
@@ -104,7 +103,7 @@ prepare_cumulative_data <- function(data_list) {
 calculate_detailed_stats <- function(data) {
   # Identify columns present in the data
   cols <- colnames(data)
-  
+
   # Common base grouping and calculations
   result <- data %>%
     group_by(Pulls) %>%
@@ -114,77 +113,77 @@ calculate_detailed_stats <- function(data) {
       Cumulative_Prob = cumsum(Count)/nrow(data),
       .groups = 'drop'
     )
-  
+
   # Add game-specific columns
   if ("Limited" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Limited_Rate = mean(Limited), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Weapons" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Weapon_Rate = mean(Weapons), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Six_Stars" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Six_Star_Rate = mean(Six_Stars), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Five_Stars" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Five_Star_Rate = mean(Five_Stars), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Limited_Four_Stars" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Limited_Four_Star_Rate = mean(Limited_Four_Stars), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Four_Stars" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Four_Star_Rate = mean(Four_Stars), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   if ("Three_Stars" %in% cols) {
-    result <- result %>% 
+    result <- result %>%
       left_join(
-        data %>% 
-          group_by(Pulls) %>% 
+        data %>%
+          group_by(Pulls) %>%
           summarise(Three_Star_Rate = mean(Three_Stars), .groups = 'drop'),
         by = "Pulls"
       )
   }
-  
+
   result
 }

@@ -60,7 +60,7 @@ basic_stats <- bind_rows(
 success_rates <- calculate_success_rates(data_list)
 
 # Prepare data for plotting success rates
-success_rates_honkai <- success_rates$honkai %>%
+success_rates_hoyo <- success_rates$hoyo %>%
   pivot_longer(cols = c(Limited_Rate, Weapon_Rate, Four_Star_Rate, Three_Star_Rate),
                names_to = "Type", values_to = "Rate")
 
@@ -74,7 +74,7 @@ success_rates_wuwa <- success_rates$wuwa %>%
 
 # Combine for overall comparison
 success_rates_long <- bind_rows(
-  success_rates_honkai,
+  success_rates_hoyo,
   success_rates_arknights,
   success_rates_wuwa
 )
@@ -117,18 +117,18 @@ plot_cumulative_probabilities(cum_data)
 
 ## Character vs Weapon Banner Analysis
 
-For Honkai games (HSR, Genshin Impact, ZZZ), we can compare the character and weapon banners.
+For HoYo games (HSR, Genshin Impact, ZZZ), we can compare the character and weapon banners.
 
 ```{r banner_comparison}
 # Prepare data for banner comparison
-honkai_games <- bind_rows(
+hoyo_games <- bind_rows(
   data_list$hsr,
   data_list$genshin,
   data_list$zzz
 )
 
 # Plot banner comparison
-plot_banner_comparison(honkai_games)
+plot_banner_comparison(hoyo_games)
 ```
 
 ## Game-Specific Statistics

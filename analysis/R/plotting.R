@@ -1,8 +1,7 @@
-
 # Define a consistent color scheme for the games
 game_colors <- c(
   "HSR" = "#5B9BD5",
-  "Genshin" = "#70AD47", 
+  "Genshin" = "#70AD47",
   "ZZZ" = "#ED7D31",
   "Arknights" = "#FAC205",
   "Wuwa" = "#9A4EAE"
@@ -74,7 +73,7 @@ plot_game_histogram <- function(data, game_name, fill_color) {
     )
 }
 
-# Plot banner comparison for Honkai games
+# Plot banner comparison for Hoyo games
 plot_banner_comparison <- function(data) {
   ggplot(data, aes(x = Banner, y = Pulls, fill = Banner)) +
     geom_violin(alpha = 0.7) +
@@ -90,8 +89,8 @@ plot_banner_comparison <- function(data) {
 
 # Plot rarity distribution
 plot_rarity_distribution <- function(data_list) {
-  # For Honkai games - pull distribution by banner
-  honkai_data <- bind_rows(
+  # For Hoyo games - pull distribution by banner
+  hoyo_data <- bind_rows(
     data_list$hsr,
     data_list$genshin,
     data_list$zzz
@@ -109,7 +108,7 @@ plot_rarity_distribution <- function(data_list) {
       names_to = "Rarity",
       values_to = "Rate"
     )
-  
+
   # For Arknights
   arknights_data <- data_list$arknights %>%
     summarise(
@@ -120,5 +119,43 @@ plot_rarity_distribution <- function(data_list) {
       Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
       Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
     ) %>%
-    pivot
+    pivot_longer(
+      cols = c(Six_Star_Rate, Five_Star_Rate, Four_Star_Rate, Three_Star_Rate),
+      names_to = "Rarity",
+      values_to = "Rate"
+    )
+
+  # For Wuwa
+  wuwa_data <- data_list$wuwa %>%
+    summarise(
+      Game = "Wuwa",
+      Banner = "Overall",
+      Five_Star_Rate = mean(Five_Stars) / mean(Pulls),
+      Four_Star_Rate = mean(Four_Stars) / mean(Pulls),
+      Limited_Four_Rate = mean(Limited_Four_Stars) / mean(Pulls),
+      Three_Star_Rate = mean(Three_Stars) / mean(Pulls)
+    ) %>%
+    pivot_longer(
+      cols = c(Five_Star_Rate, Four_Star_Rate, Limited_Four_Rate, Three_Star_Rate),
+      names_to = "Rarity",
+      values_to = "Rate"
+    )
+
+  # Combine all data
+  all_rarity_data <- bind_rows(
+    hoyo_data,
+    arknights_data,
+    wuwa_data
+  )
+
+  # Plot the rarity distribution
+  ggplot(all_rarity_data, aes(x = Game, y = Rate, fill = Rarity)) +
+    geom_bar(stat = "identity", position = "stack") +
+    facet_wrap(~ Banner, scales = "free_x") +
+    scale_fill_brewer(palette = "Set3") +
+    theme_minimal() +
+    labs(
+      title = "Rarity Distribution by Game",
+      y = "Rate"
+    )
 }
