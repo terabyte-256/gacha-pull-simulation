@@ -1,65 +1,74 @@
+#' Data Loading Functions for Gacha Pull Simulation
+#'
+#' This file contains functions to load and prepare data from simulation results.
+#' The main functions are:
+#' - load_game_data: Loads CSV data for all games from the data directory
+#' - prepare_combined_data: Combines data from all games for comparative analysis
+#'
+#' @author terabyte-256
+#' @date 2025-03-10
 
+# Required packages
+library(dplyr)
+library(data.table)  # For fread function
+
+#' Load game data from CSV files in the data directory
+#' @return A list containing data frames for each game
 load_game_data <- function() {
-    # Get the repository root directory
-    # If we're in analysis/, we need to go up one level to reach the repo root
-    # If we're in analysis/R/, we need to go up two levels to reach the repo root
+    # Find the project root directory by looking for the data directory
+    possible_paths <- c(
+        "data",             # If running from project root
+        "../data",          # If running from analysis/
+        "../../data",       # If running from analysis/R/
+        "./data",           # Alternative
+        "../../../data"     # Deeper directory
+    )
 
-    current_dir <- getwd()
-
-    # Determine the correct path to the data directory
-    if (endsWith(current_dir, "/analysis/R") || endsWith(current_dir, "\\analysis\\R")) {
-        data_path <- "../../data" # From analysis/R/ to repo root, then to data/
-    } else if (endsWith(current_dir, "/analysis") || endsWith(current_dir, "\\analysis")) {
-        data_path <- "../data" # From analysis/ to repo root, then to data/
-    } else {
-        # Fallback - this assumes we're running from the repository root
-        data_path <- "data"
-
-        # Print current directory to help debug
-        cat("Current working directory:", current_dir, "\n")
-        cat("Using data path:", data_path, "\n")
-    }
-
-    # For debugging - list files to confirm path is correct
-    if (dir.exists(data_path)) {
-        cat("Data directory exists. Contents:\n")
-        print(list.files(data_path))
-    } else {
-        cat("Warning: Data directory not found at", data_path, "\n")
-    }
-
-    # Try alternate path if first attempt fails
-    if (!dir.exists(data_path)) {
-        alternate_paths <- c(
-        "./data",
-        "../data",
-        "../../data",
-        "../../../data"
-        )
-
-        for (alt_path in alternate_paths) {
-        if (dir.exists(alt_path)) {
-            cat("Found data directory at alternative path:", alt_path, "\n")
-            data_path <- alt_path
+    # Find the first path that exists
+    data_path <- NULL
+    for (path in possible_paths) {
+        if (dir.exists(path)) {
+            data_path <- path
+            cat("Found data directory at:", normalizePath(data_path), "\n")
             break
         }
-        }
     }
+
+    # If no valid path is found
+    if (is.null(data_path)) {
+        stop("Could not locate the data directory. Make sure you're running from the project directory or a subdirectory.")
+    }
+
+    # List files to confirm path is correct
+    cat("Data directory contents:\n")
+    print(list.files(data_path, recursive = TRUE))
 
     # Read the simulation results from the CSV files with try-catch for error handling
     tryCatch({
-        results_hsr_char <- read.csv(file.path(data_path, "hsr/character.csv"))
-        results_hsr_weapon <- read.csv(file.path(data_path, "hsr/weapon.csv"))
-        results_genshin_char <- read.csv(file.path(data_path, "genshin/character.csv"))
-        results_genshin_weapon <- read.csv(file.path(data_path, "genshin/weapon.csv"))
-        results_zzz_char <- read.csv(file.path(data_path, "zzz/character.csv"))
-        results_zzz_weapon <- read.csv(file.path(data_path, "zzz/weapon.csv"))
-        results_arknights <- read.csv(file.path(data_path, "arknights/data.csv"))
-        results_wuwa <- read.csv(file.path(data_path, "wuwa/data.csv"))
+        # Using fread instead of read.csv for better performance
+        results_hsr_char <- fread(file.path(data_path, "hsr/character.csv"))
+        results_hsr_weapon <- fread(file.path(data_path, "hsr/weapon.csv"))
+        results_genshin_char <- fread(file.path(data_path, "genshin/character.csv"))
+        results_genshin_weapon <- fread(file.path(data_path, "genshin/weapon.csv"))
+        results_zzz_char <- fread(file.path(data_path, "zzz/character.csv"))
+        results_zzz_weapon <- fread(file.path(data_path, "zzz/weapon.csv"))
+        results_arknights <- fread(file.path(data_path, "arknights/data.csv"))
+        results_wuwa <- fread(file.path(data_path, "wuwa/data.csv"))
     }, error = function(e) {
         cat("Error reading data files:", e$message, "\n")
         stop("Failed to read data files. Please check the paths and file existence.")
     })
+
+    # Convert data.tables to data.frames for consistent behavior with dplyr
+    results_hsr_char <- as.data.frame(results_hsr_char)
+    results_hsr_weapon <- as.data.frame(results_hsr_weapon)
+    results_genshin_char <- as.data.frame(results_genshin_char)
+    results_genshin_weapon <- as.data.frame(results_genshin_weapon)
+    results_zzz_char <- as.data.frame(results_zzz_char)
+    results_zzz_weapon <- as.data.frame(results_zzz_weapon)
+    results_arknights <- as.data.frame(results_arknights)
+    results_wuwa <- as.data.frame(results_wuwa)
+
     # Standardize column names for Arknights
     colnames(results_arknights) <- c("Pulls", "Six_Stars", "Five_Stars", "Four_Stars", "Three_Stars")
 
@@ -68,18 +77,18 @@ load_game_data <- function() {
 
     # Combine character and weapon data for HoYo games with banner type
     results_hsr <- bind_rows(
-    mutate(results_hsr_char, Banner = "Character"),
-    mutate(results_hsr_weapon, Banner = "Weapon")
+        mutate(results_hsr_char, Banner = "Character"),
+        mutate(results_hsr_weapon, Banner = "Weapon")
     )
 
     results_genshin <- bind_rows(
-    mutate(results_genshin_char, Banner = "Character"),
-    mutate(results_genshin_weapon, Banner = "Weapon")
+        mutate(results_genshin_char, Banner = "Character"),
+        mutate(results_genshin_weapon, Banner = "Weapon")
     )
 
     results_zzz <- bind_rows(
-    mutate(results_zzz_char, Banner = "Character"),
-    mutate(results_zzz_weapon, Banner = "Weapon")
+        mutate(results_zzz_char, Banner = "Character"),
+        mutate(results_zzz_weapon, Banner = "Weapon")
     )
 
     # Add game labels
@@ -91,21 +100,23 @@ load_game_data <- function() {
 
     # Return as a list
     list(
-    hsr = results_hsr,
-    genshin = results_genshin,
-    zzz = results_zzz,
-    arknights = results_arknights,
-    wuwa = results_wuwa
+        hsr = results_hsr,
+        genshin = results_genshin,
+        zzz = results_zzz,
+        arknights = results_arknights,
+        wuwa = results_wuwa
     )
-    }
+}
 
-    # Function to prepare combined data for all games
-    prepare_combined_data <- function(data_list) {
+#' Prepare combined data for all games with standardized columns
+#' @param data_list List of data frames returned by load_game_data()
+#' @return A combined data frame with data from all games
+prepare_combined_data <- function(data_list) {
     # For HoYo games (HSR, Genshin, ZZZ)
     hoyo_games <- bind_rows(
-    data_list$hsr,
-    data_list$genshin,
-    data_list$zzz
+        data_list$hsr,
+        data_list$genshin,
+        data_list$zzz
     )
 
     # For Arknights, create comparable columns
@@ -127,15 +138,15 @@ load_game_data <- function() {
 
     # Combine all with common columns
     all_games <- bind_rows(
-    honkai_games,
-    arknights,
-    wuwa
+        hoyo_games,  # Fixed from honkai_games to hoyo_games
+        arknights,
+        wuwa
     )
 
     # Convert Game column to factor with specified levels
     all_games$Game <- factor(
-    all_games$Game,
-    levels = c("HSR", "Genshin", "ZZZ", "Arknights", "Wuwa")
+        all_games$Game,
+        levels = c("HSR", "Genshin", "ZZZ", "Arknights", "Wuwa")
     )
 
     all_games
