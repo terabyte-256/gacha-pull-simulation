@@ -5,8 +5,6 @@
 #' - load_game_data: Loads CSV data for all games from the data directory
 #' - prepare_combined_data: Combines data from all games for comparative analysis
 #'
-#' @author terabyte-256
-#' @date 2025-03-10
 
 # Required packages
 library(dplyr)
@@ -52,8 +50,8 @@ load_game_data <- function() {
         results_genshin_weapon <- fread(file.path(data_path, "genshin/weapon.csv"))
         results_zzz_char <- fread(file.path(data_path, "zzz/character.csv"))
         results_zzz_weapon <- fread(file.path(data_path, "zzz/weapon.csv"))
-        results_arknights <- fread(file.path(data_path, "arknights/data.csv"))
-        results_wuwa <- fread(file.path(data_path, "wuwa/data.csv"))
+        results_arknights <- fread(file.path(data_path, "arknights/arknights.csv"))
+        results_wuwa <- fread(file.path(data_path, "wuwa/wuwa.csv"))
     }, error = function(e) {
         cat("Error reading data files:", e$message, "\n")
         stop("Failed to read data files. Please check the paths and file existence.")
