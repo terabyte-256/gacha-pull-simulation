@@ -129,28 +129,6 @@ start web/index.html
 - 80-pull hard pity
 - 50/50 guarantee system
 
-## Project Structure
-
-```
-gacha-pull-simulation/
-├── src/                  # Rust simulation engine
-│   ├── main.rs           # Main application entry point
-│   ├── hoyo.rs           # HoYoverse game simulations
-│   ├── arknights.rs      # Arknights simulation
-│   └── wuwa.rs           # Wuthering Waves simulation
-├── analysis/             # R analysis tools
-│   ├── R/                # R utility scripts
-│   │   ├── load_data.R   # Data loading functions
-│   │   ├── plotting.R    # Visualization functions
-│   │   └── stats_utils.R # Statistical calculation functions
-│   └── gacha_pull_simulation.rmd  # R Markdown analysis report
-├── web/                  # Web calculator
-│   ├── index.html        # Calculator interface
-│   └── js/
-│       └── gacha-calculator.js  # Calculator implementation
-└── data/                 # Generated simulation data (created at runtime)
-```
-
 ## Contributing
 
 Contributions are welcome! Here's how you can contribute:
