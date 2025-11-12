@@ -2,8 +2,6 @@
 
 A comprehensive toolkit for simulating and analyzing gacha pull statistics across popular mobile games. This project provides a high-performance Rust-based simulation engine, robust statistical analysis tools using R, and an interactive web calculator.
 
-![Gacha Pull Simulation Banner](https://i.imgur.com/tXGsVXz.png)
-
 ## Features
 
 ### Simulation Engine (Rust)
