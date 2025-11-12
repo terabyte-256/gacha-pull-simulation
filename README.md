@@ -20,6 +20,15 @@ A comprehensive toolkit for simulating and analyzing gacha pull statistics acros
 - Configurable parameters (pity count, guarantee status, banner type)
 - Real-time results without server dependencies
 
+## Complete Analysis Reports
+
+This repository includes comprehensive analysis reports generated from millions of gacha pull simulations:
+
+- **[Gacha Pull Analysis Complete Report](gacha_pull_analysis_complete_report.pdf)** - A comprehensive analysis covering all supported games, including detailed statistical breakdowns, pull distribution visualizations, and probability calculations.
+- **[Gacha Detailed Statistics](gacha_detailed_statistics.pdf)** - An in-depth statistical summary with banner comparisons, success rate analyses, and cumulative probability data.
+
+These reports provide valuable insights into gacha mechanics across different games and can help players make informed decisions about their pulls.
+
 ## Supported Games
 
 - **HoYoverse Games**
